@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Visor SIG Multimedia</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <link rel="stylesheet" href="css/styles.css" />
+    <style>
+      body { margin: 0; font-family: 'Segoe UI', Arial, sans-serif; background: #191919; }
+      #map { height: 100vh; }
+    </style>
+</head>
+<body>
+    <!-- Botón de carga de archivo -->
+    <div id="file-drop" style="position:fixed;top:15px;left:50px;z-index:10000;">
+      <label style="background:#232323;color:#fff;padding:8px 14px;border-radius:12px;cursor:pointer;box-shadow:0 2px 8px #0007;font-weight:500;">
+        📂 Cargar capa (Solamente GeoJSON)
+        <input type="file" id="file-input" accept=".geojson" style="display:none;">
+      </label>
+    </div>
+
+    <div id="map"></div>
+
+    <!-- FAB mapas base -->
+    <div id="baseMapFab" class="base-map-fab" title="Cambiar mapa base">🗺️</div>
+    <div id="baseMapOptions" class="base-map-options" style="display:none;">
+      <button data-layer="osm">🌐 OSM</button>
+      <button data-layer="gmap">🗺️ Google Maps</button>
+      <button data-layer="gsat">🛰️ Satélite</button>
+    </div>
+
+    <!-- MODALES MULTIMEDIA -->
+    <div id="mediaModal" class="media-modal hidden"></div>
+    <div id="overlay" class="overlay hidden"></div>
+
+
+<button onclick="window.open('conversor/index.html', '_blank')" style="
+  position:fixed;
+  bottom:30px;
+  right:30px;
+  background:#20242c;
+  color:#fff;
+  border:none;
+  border-radius:40px;
+  padding:16px 28px;
+  box-shadow:0 4px 16px #0006;
+  font-size:18px;
+  cursor:pointer;
+  z-index:9999;">
+  <i class="fa fa-exchange-alt"></i> Convertir SHP/ZIP a GeoJSON
+</button>
+
+
+
+
+<!-- Modal informativo al iniciar -->
+<div id="geojson-warning" style="
+  position: fixed;
+  top: 0; left: 0;
+  width: 100vw; height: 100vh;
+  background: rgba(0, 0, 0, 0.75);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 99999;">
+  <div style="
+    background-color: #222831;
+    color: #eeeeee;
+    padding: 30px 40px;
+    border-radius: 16px;
+    max-width: 600px;
+    text-align: center;
+    font-family: sans-serif;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.4);">
+    <h2 style="color: #ffd369;">⚠️ Atención</h2>
+    <p style="font-size: 18px; margin: 20px 0;">
+      Esta herramienta (por ahora) <strong>carga archivos GeoJSON</strong>.<br>
+      Dentro de la página puede encontrar (abajo a la derecha) una herramienta on-line para <strong>transformar archivos SHP/ZIP a GeoJSON</strong>.
+    </p>
+    <p style="margin-bottom: 20px;">¡Gracias por usar el visor!</p>
+    <button onclick="cerrarAdvertencia()" style="
+      background-color: #ffd369;
+      border: none;
+      padding: 10px 24px;
+      font-size: 16px;
+      border-radius: 12px;
+      cursor: pointer;">
+      Entendido
+    </button>
+  </div>
+</div>
+
+
+
+
+    <!-- Librerías -->
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/shpjs@latest/dist/shp.min.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
+

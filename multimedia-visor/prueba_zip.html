@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Test SHP ZIP</title>
+  <script src="https://unpkg.com/shpjs@latest/dist/shp.min.js"></script>
+</head>
+<body>
+  <h1>Prueba SHP ZIP</h1>
+  <input type="file" id="file-input" accept=".zip">
+  <pre id="out"></pre>
+  <script>
+    document.getElementById('file-input').addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      // Pasá el file crudo, NUNCA con FileReader para ZIP
+      shp(file).then(function(geojson) {
+        document.getElementById('out').textContent = '✅ Funciona: ' + JSON.stringify(geojson, null, 2);
+      }).catch(function(err) {
+        document.getElementById('out').textContent = '❌ Error: ' + err;
+      });
+    });
+  </script>
+</body>
+</html>

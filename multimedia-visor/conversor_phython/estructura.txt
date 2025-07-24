@@ -1,0 +1,7 @@
+/conversor_shp_geojson
+├── server.py           # El backend Python/Flask (conversor)
+├── requirements.txt    # Dependencias de Python
+├── README.txt          # Instrucciones rápidas
+├── index.html          # La página web principal (frontend)
+├── main.js             # El JS del frontend (gestiona carga/conversión)
+└── (opcional: style.css)  # Si querés separar el CSS del HTML

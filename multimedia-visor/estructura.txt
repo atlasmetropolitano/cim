@@ -1,0 +1,12 @@
+multimedia-visor/
+├── index.html
+├── js/
+│   └── main.js
+├── css/
+│   └── styles.css
+├── data/
+│   └── tuscapas.geojson
+├── audio/
+├── video/
+├── imagen/
+└── (otros assets)

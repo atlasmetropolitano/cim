@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Conversor SHP/ZIP a GeoJSON</title>
+  <script defer src="main.js"></script>
+  <style>
+    body { font-family: sans-serif; margin: 2em; background: #23272f; color: #fff; }
+    #out { background: #181b20; color: #b9f; padding: 1em; border-radius: 6px; margin-top: 1em; max-height: 300px; overflow: auto;}
+    button { padding: 8px 16px; margin-top: 1em; background: #5f98fa; color: #fff; border: none; border-radius: 5px; cursor: pointer;}
+    button:hover { background: #2266cc; }
+    .modal {
+      display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+      background: rgba(0,0,0,0.7); align-items: center; justify-content: center; z-index: 1000;
+    }
+    .modal-content {
+      background: #23272f; padding: 2em; border-radius: 10px; text-align: center; color: #fff;
+      box-shadow: 0 4px 24px #000b;
+    }
+  </style>
+</head>
+<body>
+  <h1>Visor y conversor de SHP/ZIP a GeoJSON</h1>
+  <input type="file" id="file-input" accept=".zip,.shp,.dbf,.shx,.geojson">
+  <button onclick="limpiar()">Limpiar</button>
+  <pre id="out"></pre>
+
+  <!-- Modal para conversión -->
+  <div class="modal" id="convert-modal">
+    <div class="modal-content">
+      <p>Este formato no es compatible directamente.<br>
+      ¿Querés convertir tu archivo SHP/ZIP a GeoJSON?</p>
+      <button id="btn-convertir">Sí, convertir</button>
+      <button id="btn-cancelar">Cancelar</button>
+    </div>
+  </div>
+</body>
+</html>

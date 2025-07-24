@@ -1,0 +1,863 @@
+/* Estilo del mapa */
+#map {
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    z-index: 0;
+  }
+
+/* Botón de activación */
+.toggle-btn {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: #34495e;
+    color: white;
+    border: none;
+    padding: 12px 18px;
+    cursor: pointer;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: bold;
+    transition: 0.3s;
+    z-index: 1000;
+}
+
+.toggle-btn:hover {
+    background: #2c3e50;
+}
+
+/* Panel flotante */
+.panel {
+    position: fixed;
+    top: 0;
+    right: -450px; /* Más oculto */
+    width: 420px;
+    height: 100vh;
+    background: #ffffff;
+    box-shadow: -4px 0 15px rgba(0, 0, 0, 0.2);
+    transition: right 0.4s ease-in-out;
+    padding: 20px;
+    overflow-y: auto;
+    border-left: 4px solid #ddd;
+    border-radius: 8px 0 0 8px;
+}
+
+.panel.open {
+    right: 0;
+}
+
+/* Barra superior con iconos */
+.panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    background: #ecf0f1;
+    border-bottom: 3px solid #ccc;
+    border-radius: 8px 0 0 0;
+}
+
+.panel-header .icons {
+    display: flex;
+    gap: 12px;
+}
+
+.panel-header .icons button {
+    background: none;
+    border: none;
+    font-size: 18px;
+    cursor: pointer;
+    color: #34495e;
+    transition: 0.3s;
+}
+
+.panel-header .icons button:hover {
+    color: #2c3e50;
+}
+
+.panel-header .close-btn {
+    font-size: 22px;
+    cursor: pointer;
+    background: none;
+    border: none;
+    color: #e74c3c;
+    transition: 0.3s;
+}
+
+.panel-header .close-btn:hover {
+    color: #c0392b;
+}
+
+/* Cuadros de selección de años */
+.year-selector {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin: 15px 0;
+}
+
+.year {
+    background: #ddd;
+    padding: 8px 12px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: bold;
+    transition: 0.3s;
+}
+
+.year:hover {
+    background: #bbb;
+}
+
+.year.selected {
+    background: #34495e;
+    color: white;
+}
+
+/* Contenido */
+.panel h2 {
+    font-size: 18px;
+    color: #333;
+    margin-bottom: 10px;
+    border-bottom: 2px solid #ddd;
+    padding-bottom: 5px;
+}
+
+.panel p {
+    margin: 8px 0;
+    font-size: 14px;
+    color: #555;
+}
+
+.panel .stats {
+    padding: 15px;
+    background: #ecf0f1;
+    border-radius: 8px;
+    margin-bottom: 15px;
+}
+
+/* Lista de densidad */
+.density-list {
+    list-style: none;
+    padding: 0;
+}
+
+.density-list li {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    border-bottom: 1px solid #ddd;
+    font-size: 14px;
+    transition: 0.3s;
+}
+
+.density-list li:hover {
+    background: #f7f7f7;
+}
+
+.density-list .icon {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    margin-right: 12px;
+}
+
+/* Colores de los indicadores */
+.blue { background: #3498db; }
+.light-blue { background: #85c1e9; }
+.green { background: #2ecc71; }
+.yellow { background: #f1c40f; }
+.orange { background: #e67e22; }
+.red { background: #e74c3c; }
+.dark-red { background: #c0392b; }
+
+/* Contenedor de botones flotantes */
+.fab-container {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    display: flex;
+    flex-direction: column-reverse;
+    align-items: center;
+    z-index: 1002;
+}
+
+.fab {
+    width: 40px;
+    height: 40px;
+    background-color: #dd0000;
+    border: none;
+    border-radius: 50%;
+    font-size: 24px;
+    color: white;
+    cursor: pointer;
+    transition: transform 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.fab:active {
+    transform: scale(0.95);
+}
+
+.fab-options {
+    display: none;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.fab-options.show {
+    display: flex;
+}
+
+.fab-option {
+    width: 40px;
+    height: 40px;
+    background-color: #750cf5;
+    border: none;
+    border-radius: 50%;
+    color: white;
+    font-size: 20px;
+    cursor: pointer;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.fab-option:nth-child(1) {
+ background-color: #022a4a; 
+}
+
+.fab-option:nth-child(2) {
+    background-color: #ea3f0c; 
+}   
+
+
+.fab-option:nth-child(3) {
+    background-color: #2b6c19; 
+}
+
+.fab-option:nth-child(4) {
+    background-color: #ff0202;
+}
+
+.fab-option:nth-child(5) {
+    background-color: #b81747;  
+}
+
+
+/* Estilo de los menús emergentes */
+.menu-box {
+    position: absolute;
+    background-color: #00A6E3; /* Color más brillante */
+    color: white;
+    border-radius: 5px;
+    box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.2);
+    width: 270px;
+    display: none;
+    z-index: 1003;
+    overflow: hidden;
+    font-family: Arial, sans-serif;
+}
+
+.menu-box.show {
+    display: block;
+}
+
+/* Encabezados de los menús */
+.menu-header {
+    background-color: #0080B3; /* Azul oscuro */
+    padding: 10px 15px;
+    font-weight: bold;
+    font-size: 12px;
+    text-transform: uppercase;
+    border-bottom: 1px solid white;
+}
+
+/* Opciones del menú */
+.menu-box ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.menu-box ul li {
+    padding: 12px 15px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.3s ease;
+}
+
+.menu-box ul li:hover {
+    background-color: #0078A0;
+}
+
+.menu-box ul li a {
+    text-decoration: none;
+    color: white;
+    display: block;
+}
+
+/* Botones de selección de año */
+.year-selector {
+display: flex;
+justify-content: center;
+gap: 10px;
+margin: 15px 0;
+}
+
+.year {
+background: #ddd;
+padding: 10px 15px;
+border-radius: 5px;
+cursor: pointer;
+font-size: 16px;
+font-weight: bold;
+transition: background 0.3s, transform 0.2s;
+box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.year:hover {
+background: #bbb;
+transform: scale(1.1);
+}
+
+.year.selected {
+background: #0078A0;
+color: white;
+box-shadow: 2px 2px 8px rgba(0, 120, 160, 0.5);
+transform: scale(1.1);
+}
+
+/* 🛠️ Cuadro de herramientas */
+.toolbox {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background: rgba(255, 255, 255, 0.9);
+    padding: 10px;
+    border-radius: 8px;
+    box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.2);
+    display: flex;
+    gap: 8px;
+    z-index: 1001;
+}
+
+/* 📌 Estilos para el botón de alternar el menú de herramientas */
+.toolbox-toggle {
+    position: fixed;
+    /* width: 70px;
+    height: 70px; */
+    top: 20px;
+    left: 10px;
+    background: #0078A0;
+    color: white;
+    border: none;
+    padding: 10px;
+    border-radius: 60%;
+    font-size: 18px;
+    cursor: pointer;
+    z-index: 1001;
+    transition: background 0.3s, transform 0.2s;
+}
+
+.toolbox-toggle:hover {
+    background: #005f80;
+    transform: scale(1.1);
+}
+
+.toolbox-toggle.active {
+    background: #ff6347; /* Rojo cuando está activo */
+}
+
+/* 📌 Estilos para desplegar el menú de herramientas de forma horizontal */
+.toolbox {
+    position: fixed;
+    top: 20px;
+    left: 60px; /* Se coloca justo al lado del botón */
+    background: rgba(255, 255, 255, 0.95);
+    padding: 5px;
+    border-radius: 8px;
+    box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.2);
+    display: flex;
+    flex-direction: row; /* 📌 Se cambió a fila para que sea horizontal */
+    gap: 5px;
+    z-index: 1000;
+    transition: opacity 0.3s, transform 0.2s, left 0.3s ease-in-out;
+}
+
+/* Ocultar el menú cuando tiene la clase 'hidden' */
+.toolbox.hidden {
+    opacity: 0;
+    transform: translateX(-50px); /* 📌 Se oculta moviéndolo a la izquierda */
+    pointer-events: none;
+}
+
+/* Ajuste del tamaño de los botones */
+.toolbox .tool-btn {
+    width: 30px;
+    height: 30px;
+    font-size: 14px;
+    padding: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #0078A0;
+    border: none;
+    color: white;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.3s, transform 0.2s;
+}
+
+.toolbox .tool-btn:hover {
+    background: #005f80;
+    transform: scale(1.1);
+}
+
+
+/* 🔘 Botones del cuadro de herramientas */
+.tool-btn {
+    background: #0078A0;
+    border: none;
+    color: white;
+    padding: 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background 0.3s;
+}
+
+.tool-btn:hover {
+    background: #005f80;
+}
+
+.tool-btn i {
+    pointer-events: none; /* Evita que los clics afecten el ícono */
+}
+
+
+/* 📂 Cuadro flotante para WMS */
+#wms-info-box {
+    position: absolute;
+    top: 50px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: white;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.2);
+    z-index: 1002;
+    width: 300px;
+    display: none;
+}
+
+#wms-info-box.hidden {
+    display: none;
+}
+
+#wms-info-box h3 {
+    margin-top: 0;
+}
+
+#wms-info-box button {
+    background: #e74c3c;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+/* 📌 Estilos para el cuadro flotante del WMS */
+#wms-info-box {
+    position: absolute;
+    top: 100px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: white;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.2);
+    z-index: 1002;
+    width: 300px;
+    display: none;
+}
+
+#wms-info-box.show {  
+    display: block;
+}
+
+#wms-layer-select {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 14px;
+    margin-bottom: 10px;
+}
+
+#btn-add-wms-layer {
+    width: 100%;
+    padding: 8px;
+    background: #0078A0;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+#btn-add-wms-layer:hover {
+    background: #005f80;
+}
+
+#close-wms {
+    margin-top: 10px;
+    background: #e74c3c;
+    color: white;
+    border: none;
+    padding: 8px;
+    border-radius: 5px;
+    cursor: pointer;
+    width: 100%;
+}
+
+/* Asegurar que el menú principal permita submenús flotantes */
+.menu-box {
+    position: relative;
+    z-index: 1003;
+    overflow: visible; /* Permitir que los submenús sean visibles */
+}
+
+/* Asegurar que el padre del submenú tenga posición relativa */
+.has-submenu {
+    position: relative;
+}
+
+/* Ajuste del submenú para que aparezca a la derecha */
+.has-submenu .submenu-right {
+    position: absolute;
+    left: 100%; /* Se coloca a la derecha del menú padre */
+    top: 0;
+    background: #2b6c19; /* Color de fondo */
+    border-radius: 5px;
+    box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.3);
+    display: none; /* Ocultarlo por defecto */
+    min-width: 200px;
+    padding: 5px 0;
+    z-index: 9999; /* Asegurar que esté sobre otros elementos */
+    white-space: nowrap;
+}
+
+/* Mostrar el submenú cuando el mouse está sobre el padre */
+.has-submenu:hover > .submenu-right {
+    display: block;
+}
+
+/* Mejorar la visibilidad del submenú */
+.submenu-right li {
+    list-style: none;
+    padding: 10px;
+    background: #2b6c19; /* Fondo sólido */
+    border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+/* Estilo de los enlaces */
+.submenu-right li a {
+    text-decoration: none;
+    color: white;
+    display: block;
+    padding: 8px 12px;
+    transition: background 0.3s;
+}
+
+/* Efecto hover */
+.submenu-right li a:hover {
+    background: #2b6c19;
+}
+
+
+
+/*botones filtros tematicos*/
+/* .theme-filters {
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 8px;
+    padding: 6px 10px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  }
+  
+  .filter-btn {
+    background: #0077be;
+    color: white;
+    border: none;
+    margin: 0 5px;
+    padding: 5px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.3s;
+  }
+  
+  .filter-btn:hover {
+    background: #005f95;
+  }
+  
+  .filter-btn.active {
+    background: #ff7f0e;
+  } */
+
+
+  /* Oculta elementos */
+  .oculto {
+    display: none !important;
+  }
+  
+
+  #toggle-panel-derecho {
+    position: absolute;
+    top: 50%;
+    right: 0;
+    transform: translate(100%, -50%);
+    background: #0077be;
+    color: white;
+    border: none;
+    border-radius: 5px 0 0 5px;
+    padding: 8px 10px;
+    cursor: pointer;
+    z-index: 10000;
+  }
+  
+  #panel-derecho {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 330px;
+    height: 100vh;
+    background: #fff;
+    padding: 15px;
+    box-shadow: -2px 0 8px rgba(0, 0, 0, 0.3);
+    z-index: 9999;
+    transition: transform 0.3s ease;
+  }
+  
+  #panel-derecho.oculto {
+    transform: translateX(100%);
+  }
+  
+  #selector-atributo {
+    margin-bottom: 20px;
+  }
+  
+  #chart-container canvas {
+    max-width: 100%;
+  }
+  
+  #panel-derecho.oculto {
+    display: none;
+  }
+
+  .oculto {
+    display: none;
+  }
+  
+  #toggle-panel-derecho {
+    font-family: Arial, sans-serif;
+  } 
+
+
+
+
+  .accordion-box {
+    position: absolute;
+    z-index: 1000;
+    width: 280px;
+    font-family: Arial, sans-serif;
+    display: block;
+}
+
+
+.accordion-header {
+    width: 100%;
+    padding: 10px 15px;
+    background: #f13c06;
+    color: white;
+    text-align: left;
+    border: none;
+    font-weight: bold;
+    cursor: pointer;
+    border-radius: 5px;
+}
+
+.accordion-body {
+    max-height: 0;
+    overflow: hidden;
+    background: #f0f0f0;
+    padding: 0 15px;
+    border-radius: 0 0 5px 5px;
+    transition: max-height 0.4s ease, padding 0.3s ease;
+}
+
+.accordion-body.open {
+    max-height: 300px; /* o lo suficientemente grande para el contenido */
+    padding: 10px 15px;
+}
+
+
+.accordion-body ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.accordion-body li {
+    padding: 6px 0;
+    font-size: 14px;
+}
+
+.accordion-body a {
+    text-decoration: none;
+    color: #0078A0;
+}
+
+.oculto {
+    display: none !important;
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* ... [TODO: tu código actual pegado arriba] ... */
+
+
+/* 🌐 RESPONSIVE DESIGN: móviles y tablets */
+@media (max-width: 1024px) {
+    #map {
+      height: 100vh;
+      width: 100vw;
+      position: relative;
+    }
+  
+    .panel,
+    #panel-derecho {
+      width: 100% !important;
+      height: 60vh;
+      top: auto;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      border-radius: 12px 12px 0 0;
+      overflow-y: auto;
+    }
+  
+    .toolbox {
+      flex-wrap: wrap;
+      left: 10px !important;
+      top: auto;
+      bottom: 80px;
+      width: calc(100% - 20px);
+      justify-content: center;
+    }
+  
+    .fab-container {
+      bottom: 100px !important;
+      left: 10px !important;
+      flex-direction: row !important;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+  
+    .menu-box {
+      width: 100% !important;
+      left: 0 !important;
+      top: auto;
+      bottom: 0;
+      border-radius: 12px 12px 0 0;
+    }
+  
+    .density-list li {
+      font-size: 13px;
+    }
+  
+    .year-selector {
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+  
+    .toolbox-toggle {
+      left: 10px;
+      bottom: 160px;
+      top: auto;
+    }
+  
+    #wms-info-box {
+      width: 90vw !important;
+      left: 5vw !important;
+      top: auto !important;
+      bottom: 100px;
+      transform: none;
+    }
+  
+    #chat-container {
+      right: 10px;
+      bottom: 10px;
+      width: 100vw;
+      max-width: 100%;
+      border-radius: 12px 12px 0 0 !important;
+    }
+  
+    #chat-body {
+      max-height: 200px;
+    }
+  
+    .theme-filters {
+      position: fixed;
+      bottom: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: white;
+      z-index: 1002;
+      flex-wrap: wrap;
+      gap: 5px;
+    }
+  
+    .filter-btn {
+      font-size: 13px;
+      padding: 6px 10px;
+    }
+  
+    .accordion-box {
+      position: fixed;
+      bottom: 60px;
+      left: 10px;
+      width: calc(100% - 20px);
+    }
+  }
+  
+  
+  .tool-btn {
+  background-color: #333;
+  color: #fff;
+  border: none;
+  padding: 8px 14px;
+  margin-left: 6px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 16px;
+}
+.tool-btn:hover {
+  background-color: #555;
+}

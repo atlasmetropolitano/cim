@@ -1,0 +1,59 @@
+#layer-switcher-btn {
+    position: fixed;
+    top: 30px;
+    right: 30px;
+    width: 50px;
+    height: 50px;
+    background: #0097a7;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1200;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+#layer-switcher-btn img {
+    width: 32px;
+    height: 32px;
+}
+#layer-switcher-btn:hover {
+    background: #007a8c;
+}
+
+#layer-switcher-panel {
+    position: fixed;
+    top: 90px;
+    right: 30px;
+    display: none;
+    background: rgba(255,255,255,0.95);
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.20);
+    padding: 14px 10px;
+    z-index: 1201;
+    flex-direction: row;
+    gap: 12px;
+}
+#layer-switcher-panel.active {
+    display: flex;
+}
+.layer-option {
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: border 0.2s;
+    opacity: 0.8;
+}
+.layer-option.selected,
+.layer-option:hover {
+    border: 2px solid #0097a7;
+    opacity: 1;
+}
+.layer-option img {
+    width: 64px;
+    height: 64px;
+    object-fit: cover;
+}
