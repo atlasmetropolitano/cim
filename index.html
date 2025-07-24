@@ -1,0 +1,999 @@
+<!DOCTYPE html>
+<html lang="es">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="icon" type="image/png" href="img/cim.png">
+        <title>Atlas Metropolitano</title>
+        
+        <!-- Estilos de Leaflet -->
+        <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+        <link rel="stylesheet" href="css/stylosdetodo.css" />
+        <link rel="stylesheet" href="css/layerswitcher.css">
+
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+        <script defer src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+        <!-- Font Awesome para iconos -->
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+
+
+        <script>
+            console.log("📌 Intentando inicializar `map` en index.html...");
+        
+            function initializeMap() {
+                if (window.map && window.map instanceof L.Map) {
+                    console.warn("⚠️ `map` ya estaba inicializado. No se reinicializa.");
+                    window.mapReady = true;
+                    document.dispatchEvent(new Event("mapReady"));
+                    return;
+                }
+        
+                console.log("🗺️ Inicializando `map`...");
+                window.map = L.map('map').setView([-34.60, -58.50], 09);
+        
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '&copy; OpenStreetMap contributors'
+                }).addTo(window.map);
+        
+                console.log("✅ `map` inicializado correctamente.");
+        
+                window.mapReady = true;
+                document.dispatchEvent(new Event("mapReady"));
+            }
+        
+            document.addEventListener("DOMContentLoaded", initializeMap);
+        </script>
+
+
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        
+    </head>
+
+    <body>
+            <div id="map" style="height: 100vh;"></div>
+
+
+            <!-- Botón de cambio de capa base -->
+<div id="layer-switcher-btn" title="Cambiar mapa base">
+    <img src="img/capas_icono.png" alt="Capas" />
+</div>
+<div id="layer-switcher-panel">
+<div class="layer-option selected" data-layer="osm" title="OpenStreetMap">
+    <img src="img/osm_thumb.png" alt="StreetMap" />
+</div>
+<div class="layer-option" data-layer="gmap" title="Google Maps">
+    <img src="img/google_thumb.png" alt="Google Maps" />
+</div>
+<div class="layer-option" data-layer="gsat" title="Google Satélite">
+    <img src="img/sat_thumb.png" alt="Satélite" />
+</div>
+</div>
+
+
+        <!-- 🧭 Leyenda dinámica -->
+<div id="legend" style="
+position: absolute;
+bottom: 80px;
+left: 520px;
+z-index: 1000;
+background: white;
+padding: 10px 15px;
+border-radius: 8px;
+box-shadow: 2px 2px 8px rgba(0,0,0,0.2);
+font-size: 13px;
+line-height: 1.4;
+color: #333;
+font-family: Arial, sans-serif;
+min-width: 160px;
+">
+<div id="legend-header" style="cursor: move; font-weight: bold;">Necesidades Básicas Insatisfechas</div>
+<div id="legend-content"></div>
+</div>
+
+
+        <!-- 🗂️ Filtros temáticos -->
+        <div class="theme-filters">
+            <button class="filter-btn" data-theme="nbi">NBI</button>
+            <button class="filter-btn" data-theme="precipitaciones">Precipitaciones</button>
+            <button class="filter-btn" data-theme="area">Área de estudio</button>
+        </div>    
+
+
+            <!-- Botón para mostrar/ocultar el menú de herramientas -->
+        <button id="toggle-toolbox" class="toolbox-toggle"><i class="fas fa-tools"></i></button>
+
+        <!-- 🛠️ Cuadro de herramientas (Menú reducido) -->
+        <div class="toolbox hidden">
+        <!-- 🔍 Campo de búsqueda por dirección -->
+        <div class="toolbox-search">
+            <input type="text" id="address-search" placeholder="Buscar dirección o lugar...">
+            <button id="btn-search-address" title="Buscar dirección"><i class="fas fa-search"></i></button>
+        </div>
+            <button class="tool-btn" id="btn-zoom-in" title="Acercar"><i class="fas fa-search-plus"></i></button>
+            <button class="tool-btn" id="btn-zoom-out" title="Alejar"><i class="fas fa-search-minus"></i></button>
+            <button class="tool-btn" id="btn-reset" title="Restablecer Mapa"><i class="fas fa-home"></i></button>
+            
+
+
+            <!-- <button class="tool-btn" id="btn-upload-geojson" title="Cargar GeoJSON"><i class="fas fa-file-upload"></i></button> -->
+            <button class="tool-btn" id="btn-load-wms" title="Cargar Servicio WMS"><i class="fas fa-globe"></i></button>
+            <button class="tool-btn" id="btn-load-wfs" title="Cargar Servicio WFS"><i class="fas fa-database"></i></button>                
+            
+             
+            <button class="tool-btn" id="btn-download-geojson" title="Descargar GeoJSON"><i class="fas fa-download"></i></button>
+            <button class="tool-btn" id="btn-upload-geojson" title="Cargar GeoJSON"><i class="fas fa-file-upload"></i></button>
+            <button class="tool-btn" id="btn-print-map" title="Imprimir Mapa"><i class="fas fa-print"></i></button>
+            <button class="tool-btn" id="btn-screenshot-map" title="Capturar Pantalla"><i class="fas fa-camera"></i></button>
+            
+
+            <button class="tool-btn" id="btn-directions" title="Cómo llegar"><i class="fas fa-route"></i></button>
+            
+            <button class="tool-btn" title="Abrir visor multimedia" onclick="abrirMultimedia()">
+                 🎬
+            </button>
+
+        <!-- 🧭 Botón de geolocalización -->
+        <button class="tool-btn" id="btn-locate-user" title="Mi ubicación">
+            <i class="fas fa-location-crosshairs"></i>
+        </button>
+        <button class="tool-btn" id="btn-toggle-layer" title="Alternar Capa"><i class="fas fa-layer-group"></i></button>
+            <input type="file" id="geojson-input" accept=".geojson" style="display: none;">
+        </div>
+      
+
+        <!-- 📌 Cuadro flotante para datos del WMS -->
+        <div id="wms-info-box" class="hidden">
+            <h3>Selecciona una capa del Servicio WMS</h3>
+            <div id="wms-data"></div>
+            <button id="close-wms">Cerrar</button>
+        </div>
+
+
+        <!-- 🚀 Cargar menudeladerecha.js SOLO cuando `map` esté listo -->
+        <script>
+            document.addEventListener("mapReady", () => {
+                if (!window.menudeladerechaCargado) {
+                    console.log("📌 Cargando menudeladerecha.js...");
+                    const script1 = document.createElement("script");
+                    script1.src = "js/menudeladerecha.js";
+                    script1.onload = () => console.log("✅ menudeladerecha.js cargado.");
+                    document.body.appendChild(script1);
+                    window.menudeladerechaCargado = true;
+                }
+
+                if (!window.menuizquierdoCargado) {
+                    console.log("📌 Cargando menuizquierdo.js...");
+                    const script2 = document.createElement("script");
+                    script2.src = "js/menuizquierdo.js";
+                    script2.onload = () => console.log("✅ menuizquierdo.js cargado.");
+                    document.body.appendChild(script2);
+                    window.menuizquierdoCargado = true;
+                }
+            });
+        </script>
+
+        <!-- Botones flotantes -->
+        <div class="fab-container">
+            <button class="fab" id="fab-main" aria-label="Abrir menú" aria-expanded="false">
+                <i class="fas fa-plus"></i>
+            </button>
+            <div class="fab-options" id="fab-options">
+                <button class="fab-option" data-menu="menu1" aria-label="CARACTERÍSTICAS URBANÍSTICAS">
+                    <i class="fas fa-solid fa-city"></i>
+                </button>
+                <button class="fab-option" data-menu="menu2" aria-label="CARACTERÍSTICAS DEMOGRÁFICAS, SOCIALES Y ECONÓMICAS">
+                    <i class="fas fa-solid fa-square-poll-vertical"></i>
+                </button>
+                <button class="fab-option" data-menu="menu3" aria-label="CARACTERÍSTICAS AMBIENTALES">
+                    <i class="fas fa-solid fa-seedling"></i>
+                </button>
+                <button class="fab-option" data-menu="menu4" aria-label="CALIDAD DE VIDA">
+                    <i class="fas fa-solid fa-hand-holding-heart"></i>
+                </button>
+                <button class="fab-option" data-menu="menu5" aria-label="POLÍTICO ADMINISTRATIVO">
+                    <i class="fas fa-solid fa-landmark"></i>
+                </button>
+                <!-- Botón para borrar todas las capas -->
+                <button class="fab-option" id="btn-clear-layers" title="Borrar capas">
+                    <i class="fas fa-trash"></i>
+                </button>
+
+            </div>
+        </div>
+
+<!-- 📂 Contenedores de acordeón individuales -->
+<div id="accordion-urban" class="accordion-box oculto"></div>
+<div id="accordion-demo" class="accordion-box oculto"></div>
+<div id="accordion-amb" class="accordion-box oculto"></div>
+<div id="accordion-vida" class="accordion-box oculto"></div>
+<div id="accordion-poli" class="accordion-box oculto"></div>
+
+
+
+        <!-- Botón de activación -->
+        <!-- <button class="toggle-btn" onclick="togglePanel()">☰ Panel</button> -->
+
+        <!-- Panel flotante -->
+        <!-- <div class="panel" id="floatingPanel">
+            Encabezado con botones -->
+            <!-- <div class="panel-header">
+                <div class="icons">
+                    <button>📊</button>
+                    <button>⚙️</button>
+                    <button>🔍</button>
+                </div>
+                <button class="close-btn" onclick="togglePanel()">✖</button>
+            </div> --> 
+
+            <!-- Cuadros de selección de años -->
+            <div class="year-selector">
+                <!-- <div class="year" onclick="selectYear(this)">1980</div> 
+                <div class="year" onclick="selectYear(this)" data-geojson="data2001.geojson">#</div>
+                <div class="year" onclick="selectYear(this)" data-geojson="data2001.geojson">1991</div>
+                <div class="year" onclick="selectYear(this)" data-geojson="data/nbi_2001.geojson">2001</div>
+                <div class="year" onclick="selectYear(this)" data-geojson="data/nbi_2010.geojson">2010</div>
+                <div class="year selected" onclick="selectYear(this)" data-geojson="data/nbi2022_1.geojson">2022</div>
+            </div>-->
+
+            <!-- Información General -->
+            <div class="stats">
+                <h2>Información General</h2>
+                <p><strong>Habitantes:</strong></p>
+                <p><strong>Hogares:</strong></p>
+                <p><strong>Área:</strong></p>
+            </div>
+
+            <!-- Densidad de Población -->
+            <!-- <h2>Presipitaciones</h2> -->
+            <!-- <ul class="density-list">
+                <li><span class="icon blue"></span> Menor 50 mm.</li>
+                <li><span class="icon light-blue"></span> 50 mm. a 80 mm.</li>
+                <li><span class="icon green"></span> 80 mm. a de 100 mm. → 466.714</li>
+            </ul>
+        </div> -->
+        
+
+        
+<!-- 📊 Botón flotante para mostrar/ocultar el panel derecho -->
+<button id="toggle-panel-derecho" title="Mostrar/Ocultar gráfico" style="
+    position: absolute;
+    top: 100px;
+    right: 0;
+    z-index: 2000;
+    background: #fff;
+    border: 1px solid #ccc;
+    border-radius: 5px 0 0 5px;
+    padding: 6px 10px;
+    font-size: 20px;
+    cursor: pointer;
+">
+  <i id="toggle-icon" class="fas fa-chevron-left"></i>
+</button>
+
+
+<!-- 🎞️ Slider temporal con Play/Pausa -->
+<div id="time-slider-container" style="
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 2000;
+    background: rgba(255,255,255,0.95);
+    padding: 10px 20px;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.2);
+    display: flex;
+    align-items: center;
+    gap: 15px;
+">
+    <button id="btn-play" style="padding: 6px 10px; font-size: 16px;">▶️</button>
+    <button id="btn-pause" style="padding: 6px 10px; font-size: 16px;">⏸️</button>
+    
+    <input type="range" id="time-slider" min="1991" max="2022" step="1" value="1991" list="years" />
+    <datalist id="years">
+        <option value="1991" label="1991"></option>
+        <option value="2001" label="2001"></option>
+        <option value="2010" label="2010"></option>
+        <option value="2022" label="2022"></option>
+    </datalist>
+    <span id="slider-year" style="font-weight: bold;">1991</span>
+</div>
+
+
+
+
+<!-- 📊 Panel lateral derecho colapsable -->
+<!-- <div id="panel-derecho" class="oculto" style="
+    position: absolute;
+    top: 100px;
+    right: 0;
+    width: 320px;
+    background: white;
+    border-left: 1px solid #ccc;
+    box-shadow: -2px 0 8px rgba(0,0,0,0.2);
+    padding: 15px;
+    z-index: 999; -->
+">
+    <!-- Selector de atributo -->
+    <!-- <div id="selector-atributo" style="margin-bottom: 15px;">
+        <label for="atributo-select"><strong>Categorizar por:</strong></label>
+        <select id="atributo-select" style="width: 100%; padding: 5px; margin-top: 5px;"></select>
+    </div>
+
+    <!-- Contenedor del gráfico 
+    <div id="chart-container">
+        <canvas id="dataChart" width="300" height="300"></canvas>
+    </div>
+</div>
+
+        </div> -->
+
+        <!-- JS para el botón -->
+
+        <script>
+            document.addEventListener("DOMContentLoaded", () => {
+                const panel = document.getElementById("panel-derecho");
+                const toggleBtn = document.getElementById("toggle-panel-derecho");
+                const icon = document.getElementById("toggle-icon");
+            
+                toggleBtn.addEventListener("click", () => {
+                    panel.classList.toggle("oculto");
+                    if (panel.classList.contains("oculto")) {
+                        icon.classList.remove("fa-chevron-left");
+                        icon.classList.add("fa-chevron-right");
+                    } else {
+                        icon.classList.remove("fa-chevron-right");
+                        icon.classList.add("fa-chevron-left");
+                    }
+                });
+            });
+        </script>
+
+<script>
+    const geojsonPaths = {
+        "1991": "data/nbi_1991.geojson",
+        "2001": "data/nbi_2001.geojson",
+        "2010": "data/nbi_2010.geojson",
+        "2022": "data/nbi2022_1.geojson"
+    };
+
+    let currentLayer = null;
+    let intervalId = null;
+    let isPlaying = false;
+    const years = [1991, 2001, 2010, 2022];
+
+    function getQuantileBreaks(values, k = 5) {
+        values.sort((a, b) => a - b);
+        const breaks = [];
+        for (let i = 1; i < k; i++) {
+            const q = i / k;
+            const index = Math.floor(q * values.length);
+            breaks.push(values[index]);
+        }
+        return breaks;
+    }
+
+    function getColorByValue(value, breaks) {
+        if (value <= breaks[0]) return "#edf8fb";
+        if (value <= breaks[1]) return "#b2e2e2";
+        if (value <= breaks[2]) return "#66c2a4";
+        if (value <= breaks[3]) return "#2ca25f";
+        return "#006d2c";
+    }
+
+    function loadGeoJSONByYear(year) {
+        if (currentLayer) {
+            window.map.removeLayer(currentLayer);
+        }
+    
+        const path = geojsonPaths[year];
+        fetch(path)
+            .then(res => res.json())
+            .then(data => {
+                const values = data.features
+                    .map(f => parseFloat(f.properties["F__NBI"]))
+                    .filter(v => !isNaN(v));
+    
+                const breaks = getQuantileBreaks(values, 5);
+    
+                currentLayer = L.geoJSON(data, {
+                    style: feature => {
+                        const value = parseFloat(feature.properties["F__NBI"]);
+                        const fillColor = getColorByValue(value, breaks);
+                        return {
+                            color: "#444",
+                            weight: 0.5,
+                            fillColor,
+                            fillOpacity: 0.7
+                        };
+                    },
+                    onEachFeature: (feature, layer) => {
+                        if (feature.properties) {
+                            layer.bindPopup(
+                                Object.entries(feature.properties)
+                                    .map(([key, val]) => `<strong>${key}:</strong> ${val}`)
+                                    .join("<br>")
+                            );
+                        }
+                    }
+                }).addTo(window.map);
+    
+                // ✅ Guardar para gráficos
+                window.lastGeojsonData = data;
+    
+                // ✅ Rellenar selector de atributos
+                const selector = document.getElementById("atributo-select");
+                if (selector) {
+                    selector.innerHTML = "";
+    
+                    const ejemplo = data.features[0]?.properties || {};
+                    const numericos = Object.keys(ejemplo).filter(k => typeof ejemplo[k] === "number" || !isNaN(ejemplo[k]));
+    
+                    if (numericos.length > 0) {
+                        const defaultOption = document.createElement("option");
+                        defaultOption.disabled = true;
+                        defaultOption.selected = true;
+                        defaultOption.textContent = "Seleccioná un atributo...";
+                        selector.appendChild(defaultOption);
+                    } else {
+                        const noOption = document.createElement("option");
+                        noOption.disabled = true;
+                        noOption.selected = true;
+                        noOption.textContent = "No hay atributos numéricos";
+                        selector.appendChild(noOption);
+                    }
+    
+                    numericos.forEach(k => {
+                        const opt = document.createElement("option");
+                        opt.value = k;
+                        opt.textContent = k;
+                        selector.appendChild(opt);
+                    });
+                }
+    
+                // ✅ Generar leyenda
+                const colors = ["#edf8fb", "#b2e2e2", "#66c2a4", "#2ca25f", "#006d2c"];
+                let legendHTML = breaks.map((brk, i) => {
+                    const from = i === 0 ? values[0] : breaks[i - 1];
+                    const to = brk;
+                    return `<div><span style="display:inline-block;width:18px;height:12px;background:${colors[i]};margin-right:8px;border:1px solid #999"></span>${from.toFixed(2)} - ${to.toFixed(2)}</div>`;
+                }).join("");
+    
+                legendHTML += `<div><span style="display:inline-block;width:18px;height:12px;background:${colors[4]};margin-right:8px;border:1px solid #999"></span>${breaks[3].toFixed(2)}+</div>`;
+                document.getElementById("legend-content").innerHTML = legendHTML;
+            });
+    }
+    
+    
+
+
+    function updateSliderAndMap(year) {
+        document.getElementById("time-slider").value = year;
+        document.getElementById("slider-year").textContent = year;
+        loadGeoJSONByYear(year);
+    }
+
+    function playAnimation() {
+        let index = years.indexOf(parseInt(document.getElementById("time-slider").value));
+        intervalId = setInterval(() => {
+            index = (index + 1) % years.length;
+            updateSliderAndMap(years[index]);
+        }, 2000);
+        isPlaying = true;
+    }
+
+    function pauseAnimation() {
+        clearInterval(intervalId);
+        isPlaying = false;
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+        const slider = document.getElementById("time-slider");
+        const label = document.getElementById("slider-year");
+
+        // 👇 Empezamos en 1991
+        updateSliderAndMap("1991");
+
+        slider.addEventListener("input", () => {
+            pauseAnimation();
+            const year = slider.value;
+            label.textContent = year;
+            loadGeoJSONByYear(year);
+        });
+
+        document.getElementById("btn-play").addEventListener("click", () => {
+            if (!isPlaying) playAnimation();
+        });
+
+        document.getElementById("btn-pause").addEventListener("click", pauseAnimation);
+    });
+</script>
+
+<script>
+    function makeDraggable(el) {
+        let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+        el.querySelector("#legend-header").onmousedown = dragMouseDown;
+
+
+        function dragMouseDown(e) {
+            e = e || window.event;
+            e.preventDefault();
+            // get the mouse cursor position at startup:
+            pos3 = e.clientX;
+            pos4 = e.clientY;
+            document.onmouseup = closeDragElement;
+            document.onmousemove = elementDrag;
+        }
+
+        function elementDrag(e) {
+            e = e || window.event;
+            e.preventDefault();
+            // calculate the new cursor position:
+            pos1 = pos3 - e.clientX;
+            pos2 = pos4 - e.clientY;
+            pos3 = e.clientX;
+            pos4 = e.clientY;
+            // set the element's new position:
+            el.style.top = (el.offsetTop - pos2) + "px";
+            el.style.left = (el.offsetLeft - pos1) + "px";
+        }
+
+        function closeDragElement() {
+            document.onmouseup = null;
+            document.onmousemove = null;
+        }
+    }
+
+    // Esperamos que el DOM esté cargado
+    document.addEventListener("DOMContentLoaded", () => {
+        const legendBox = document.getElementById("legend");
+        makeDraggable(legendBox);
+    });
+</script>
+
+<script>
+    // Alternar visibilidad del contenedor del acordeón
+    const accordionContainer = document.getElementById("accordion-container");
+    document.querySelectorAll(".fab-option").forEach(btn => {
+        btn.addEventListener("click", () => {
+            accordionContainer.style.display = accordionContainer.style.display === "none" ? "block" : "none";
+        });
+
+        document.getElementById("fab-main").addEventListener("click", () => {
+    // Cerrar todos los menús de acordeón abiertos
+    Object.values(accordionData).forEach(d => {
+        const el = document.getElementById(d.id);
+        el.classList.add("oculto");
+    });
+
+    // Alternar la visibilidad del menú flotante
+    document.getElementById("fab-options").classList.toggle("show");
+});
+
+document.addEventListener("click", e => {
+    const isAccordion = e.target.closest(".accordion-box");
+    const isFab = e.target.closest(".fab-container");
+
+    if (!isAccordion && !isFab) {
+        Object.values(accordionData).forEach(d => {
+            document.getElementById(d.id).classList.add("oculto");
+        });
+    }
+});
+
+
+
+
+
+
+
+            document.getElementById("btn-clear-layers").addEventListener("click", () => {
+        Object.values(loadedLayers).forEach(layer => window.map.removeLayer(layer));
+        for (const key in loadedLayers) delete loadedLayers[key];
+        activeLayerId = null;
+    });
+    
+    });
+
+    // Lógica para abrir/cerrar cada sección de acordeón
+    document.querySelectorAll(".accordion-header").forEach(header => {
+        header.addEventListener("click", () => {
+            const body = header.nextElementSibling;
+            const isOpen = body.style.display === "block";
+            document.querySelectorAll(".accordion-body").forEach(b => b.style.display = "none");
+            if (!isOpen) {
+                body.style.display = "block";
+            }
+        });
+    });
+</script>
+
+<script>
+    const accordionData = {
+        "menu1": {
+            id: "accordion-urban",
+            title: "CARACTERÍSTICAS URBANÍSTICAS",
+            items: [
+                { label: "Ocupación del Suelo", file: "512.geojson", atributo: "Area" },
+                { label: "Equipamiento", file: "3312.geojson", atributo: "Sum_MATRIC" },
+                { label: "Infraestructura", file: "3411.geojson", atributo: "Tipo_RUTA" }
+            ]
+        },
+        "menu2": {
+            id: "accordion-demo",
+            title: "DEMOGRÁFICAS, SOCIALES Y ECONÓMICAS",
+            items: [
+                { label: "Demográficas", file: "4123.geojson", atributo: "densidad22" },
+                { label: "Socioeconómicas", file: "4222.geojson", atributo: "F2004" }
+            ]
+        },
+        "menu3": {
+            id: "accordion-amb",
+            title: "CARACTERÍSTICAS AMBIENTALES",
+            items: [
+                { label: "Precipitaciones", file: "precipitaciones.geojson", atributo: "M1_PRECIPI" },
+                { label: "Ambiental", file: "data/ambiental.geojson" },
+                { label: "Otro Ambiental", file: "data/otroambiental.geojson" }
+            ]
+        },
+        "menu4": {
+            id: "accordion-vida",
+            title: "CALIDAD DE VIDA",
+            items: [
+                { label: "Vivienda", file: "522.geojson", atributo: "PVII22" },
+                { label: "Servicios básicos", file: "512.geojson", atributo: "F_PADEDP22" },
+                { label: "Nivel socioeconómico", file: "data/nivel_socio.geojson" },
+                { label: "Necesidades básicas insatisfechas", file: "nbi2022.geojson", atributo: "F__NBI" },
+                { label: "Educación", file: "data/educacion.geojson" }
+            ]
+        },
+        "menu5": {
+            id: "accordion-poli",
+            title: "POLÍTICO ADMINISTRATIVO",
+            items: [
+                { label: "Códigos", file: "data/codigos.geojson" },
+                { label: "Reglamentos", file: "data/reglamentos.geojson" }
+            ]
+        }
+    };
+    
+    
+    function buildAccordion(menuId) {
+
+       
+        const data = accordionData[menuId];
+        const container = document.getElementById(data.id);
+        const colores = {
+                            menu1: '#022a4a',
+                            menu2: '#ea3f0c',
+                            menu3: '#2b6c19',
+                            menu4: '#ff0202',
+                            menu5: '#b81747'
+                        };
+
+        container.innerHTML = `
+            <div style="background:white;border-radius:10px;padding:10px;box-shadow:2px 2px 10px rgba(0,0,0,0.2);">
+                <button class="accordion-header" style="background: ${colores[menuId] || '#444'};">${data.title}</button>
+                <div class="accordion-body">
+                    <ul>
+                        ${data.items.map(item => `
+                            <li>
+                                <a href="#" class="geojson-link" data-file="${item.file}" data-atributo="${item.atributo || ''}">${item.label}</a>
+
+                                <button class="delete-layer-btn" data-file="${item.file}" style="float:right;background:none;border:none;color:#c00;font-weight:bold;cursor:pointer;" title="Eliminar capa">🗑️</button>
+                            </li>
+                        `).join("")}
+
+                    </ul>
+                </div>
+            </div>
+        `;
+    
+        container.addEventListener("click", e => {
+            if (e.target.classList.contains("accordion-header")) {
+                const body = e.target.nextElementSibling;
+                const isOpen = body.classList.contains("open");
+document.querySelectorAll(".accordion-body").forEach(b => b.classList.remove("open"));
+if (!isOpen) {
+    body.classList.add("open");
+}
+
+
+            }
+    
+            if (e.target.classList.contains("geojson-link")) {
+                e.preventDefault();
+                const path = e.target.dataset.file;
+                loadCustomGeoJSON(path);
+            }
+
+                        if (e.target.classList.contains("delete-layer-btn")) {
+                e.preventDefault();
+                const file = e.target.dataset.file;
+                if (loadedLayers[file]) {
+                    window.map.removeLayer(loadedLayers[file]);
+                    delete loadedLayers[file];
+                }
+            }
+
+        });
+    }
+    
+    function toggleMenu(menuId, triggerButton) {
+        Object.values(accordionData).forEach(d => {
+            const el = document.getElementById(d.id);
+            el.classList.add("oculto");
+        });
+    
+        const selected = document.getElementById(accordionData[menuId].id);
+        const isVisible = !selected.classList.contains("oculto");
+    
+        if (!isVisible) {
+            const rect = triggerButton.getBoundingClientRect();
+            const left = rect.right + 10;
+            const top = rect.top + window.scrollY;
+    
+            selected.style.left = `${left}px`;
+            selected.style.top = `${top}px`;
+    
+            selected.classList.remove("oculto");
+        } else {
+            selected.classList.add("oculto");
+        }
+    }
+    
+    const loadedLayers = {};
+let activeLayerId = null;
+
+
+function loadCustomGeoJSON(filePath) {
+    if (loadedLayers[filePath]) {
+        highlightLayer(filePath);
+        return;
+    }
+
+    fetch(filePath)
+        .then(res => res.json())
+        .then(data => {
+            const newLayer = L.geoJSON(data, {
+                style: feature => ({
+                    color: "#444",
+                    weight: 1,
+                    fillColor: getRandomColor(),
+                    fillOpacity: 0.3
+                }),
+                onEachFeature: (feature, layer) => {
+                    if (feature.properties) {
+                        layer.bindPopup(Object.entries(feature.properties)
+                            .map(([k, v]) => `<strong>${k}:</strong> ${v}`)
+                            .join("<br>"));
+                    }
+                }
+            }).addTo(window.map);
+
+            loadedLayers[filePath] = newLayer;
+            highlightLayer(filePath);
+
+            // 💾 Guardamos para uso en gráficos
+            window.lastGeojsonData = data;
+
+            // 🎯 Poblar el selector de atributos
+            const selector = document.getElementById("atributo-select");
+            if (selector) {
+                selector.innerHTML = "";
+            
+                const ejemplo = data.features[0]?.properties || {};
+                const numericos = Object.keys(ejemplo).filter(k => typeof ejemplo[k] === "number" || !isNaN(ejemplo[k]));
+            
+                if (numericos.length > 0) {
+                    const defaultOption = document.createElement("option");
+                    defaultOption.disabled = true;
+                    defaultOption.selected = true;
+                    defaultOption.textContent = "Seleccioná un atributo...";
+                    selector.appendChild(defaultOption);
+                } else {
+                    const noOption = document.createElement("option");
+                    noOption.disabled = true;
+                    noOption.selected = true;
+                    noOption.textContent = "No hay atributos numéricos";
+                    selector.appendChild(noOption);
+                }
+            
+                numericos.forEach(k => {
+                    const opt = document.createElement("option");
+                    opt.value = k;
+                    opt.textContent = k;
+                    selector.appendChild(opt);
+                });
+            }
+            
+        })
+        .catch(err => console.error("❌ Error cargando GeoJSON:", err));
+}
+
+
+
+
+function getRandomColor() {
+    const colors = ['#2c7bb6', '#d7191c', '#fdae61', '#abd9e9', '#66bd63', '#fee08b', '#8c510a'];
+    return colors[Math.floor(Math.random() * colors.length)];
+}
+
+// Evento para generar gráfico al cambiar el atributo
+document.getElementById("atributo-select")?.addEventListener("change", function () {
+    const atributo = this.value;
+    if (window.lastGeojsonData && atributo) {
+        generarGraficoPie(window.lastGeojsonData, atributo);
+    }
+});
+
+// Inicializar menús flotantes y acordeones
+document.querySelectorAll(".fab-option").forEach(btn => {
+    const menuId = btn.dataset.menu;
+    buildAccordion(menuId);
+    btn.addEventListener("click", () => toggleMenu(menuId, btn));
+});
+
+
+
+    
+
+ </script>
+    
+
+<!-- 🗃️ Cuadro flotante para WFS -->
+<div id="wfs-info-box" class="hidden draggable-box" style="
+    position: absolute;
+    top: 150px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: white;
+    padding: 10px;
+    border-radius: 8px;
+    box-shadow: 2px 2px 10px rgba(0,0,0,0.2);
+    z-index: 1002;
+    width: 340px;
+    cursor: move;
+    display: none;
+">
+    <div style="font-weight: bold; cursor: move;" id="wfs-box-header">Servicio WFS</div>
+    <div id="wfs-data" style="margin-top: 10px;"></div>
+    <button id="close-wfs" style="
+        margin-top: 10px;
+        background: #e74c3c;
+        color: white;
+        border: none;
+        padding: 8px 12px;
+        border-radius: 5px;
+        cursor: pointer;
+        width: 100%;
+    ">Cerrar</button>
+</div>
+
+
+<!-- 📍 Cuadro flotante para rutas -->
+<div id="route-box" class="hidden" style="
+    position: absolute;
+    top: 160px;
+    left: 50px;
+    background: white;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 2px 2px 10px rgba(0,0,0,0.2);
+    z-index: 1003;
+    width: 300px;
+    display: none;
+">
+    <h3>Cómo llegar</h3>
+    <label>Origen:</label>
+    <input type="text" id="input-origin" placeholder="Dirección o 'mi ubicación'" style="width:100%; margin-bottom: 8px;">
+    <label>Destino:</label>
+    <input type="text" id="input-dest" placeholder="Dirección destino" style="width:100%; margin-bottom: 8px;">
+    <label>Modo:</label>
+    <select id="mode-select" style="width:100%; margin-bottom: 10px;">
+        <option value="foot-walking">🚶 Caminando</option>
+        <option value="driving-car">🚗 En auto</option>
+    </select>
+    <button id="btn-calc-route" style="
+        width: 100%;
+        padding: 8px;
+        background: #3498db;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+    ">Calcular ruta</button>
+    <div id="route-info" style="margin-top: 10px; font-size: 14px;"></div>
+</div>
+
+<!-- 💬 Widget de Chatbot estilo WhatsApp
+<div id="chat-launcher" style="position: fixed; bottom: 20px; right: 20px; background: #25D366; color: white; padding: 10px 15px; border-radius: 50px; cursor: pointer; z-index: 1000; display: none; font-family: sans-serif;">
+    💬
+  </div>
+  
+  <div id="chat-container" style="position: fixed; bottom: 20px; right: 20px; z-index: 1001; max-width: 320px; font-family: sans-serif; box-shadow: 0 4px 12px rgba(0,0,0,0.15); border-radius: 10px; overflow: hidden;">
+    <div id="chat-header" style="background: #075E54; color: white; padding: 10px 15px; font-weight: bold; display: flex; justify-content: space-between; align-items: center;">
+      <span id="chat-toggle" style="cursor: pointer;">Asistente SIG</span>
+      <button id="chat-close" style="background: none; border: none; color: white; font-size: 18px; cursor: pointer;">&times;</button>
+    </div>
+    <div id="chat-body" style="display: none; background: #ECE5DD; padding: 10px; height: 300px; overflow-y: auto; font-size: 14px;">
+    </div>
+    <form id="chat-form" style="display: none; background: #f0f0f0; padding: 10px; display: flex; align-items: center;">
+      <input type="text" id="chat-input" placeholder="Escribí un mensaje" style="flex: 1; padding: 8px; border-radius: 20px; border: 1px solid #ccc;">
+      <button type="submit" style="background: #25D366; border: none; color: white; padding: 8px 12px; margin-left: 5px; border-radius: 50%; cursor: pointer;">
+        <i class="fas fa-paper-plane"></i>
+      </button>
+    </form>
+  </div>
+   -->
+  <!-- Font Awesome para ícono de envío -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  
+  <script>
+  const toggle = document.getElementById('chat-toggle');
+  const closeBtn = document.getElementById('chat-close');
+  const body = document.getElementById('chat-body');
+  const form = document.getElementById('chat-form');
+  const container = document.getElementById('chat-container');
+  const launcher = document.getElementById('chat-launcher');
+  
+  // Mostrar/Ocultar contenido
+  toggle.addEventListener('click', () => {
+    const isVisible = body.style.display === 'block';
+    body.style.display = form.style.display = isVisible ? 'none' : 'flex';
+  });
+  
+  closeBtn.addEventListener('click', () => {
+    container.style.display = 'none';
+    launcher.style.display = 'block';
+  });
+  
+  launcher.addEventListener('click', () => {
+    container.style.display = 'block';
+    body.style.display = 'block';
+    form.style.display = 'flex';
+    launcher.style.display = 'none';
+  });
+  
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const input = document.getElementById('chat-input');
+    const msg = input.value;
+    if (!msg) return;
+  
+    body.innerHTML += `<div style="background: #DCF8C6; margin: 5px 0; padding: 8px 12px; border-radius: 10px 10px 0 10px; align-self: flex-end; max-width: 80%; float: right; clear: both;">${msg}</div>`;
+    input.value = '';
+    body.scrollTop = body.scrollHeight;
+  
+    const res = await fetch('/ask', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: msg })
+    });
+    const data = await res.json();
+  
+    body.innerHTML += `<div style="background: white; margin: 5px 0; padding: 8px 12px; border-radius: 10px 10px 10px 0; align-self: flex-start; max-width: 80%; float: left; clear: both;">${data.reply}</div>`;
+    body.scrollTop = body.scrollHeight;
+  });
+  </script>
+  
+  
+    <script>
+    function abrirMultimedia() {
+        window.open("multimedia-visor/index.html", "_blank");
+    }
+    </script>
+
+
+
+       <!-- <link rel="stylesheet" href="static/chatbot.css">
+        <script src="static/chatbot.js"></script> -->   
+        <script defer src="js/menuizquierdo.js"></script>        
+        <script defer src="js/menudeladerecha.js"></script>
+        <script defer src="js/menuizquierdaarriba.js"></script>
+        <script src="js/layerswitcher.js"></script>
+
+
+    </body>
+</html>
