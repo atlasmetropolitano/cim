@@ -37,3 +37,26 @@ button:hover { background: #e4c15d; }
   padding: 2em; border-radius: 10px; min-width: 260px; text-align: center;
   box-shadow: 0 4px 18px #000b;
 }
+
+
+/* Mejoras para pantallas pequeñas */
+@media screen and (max-width: 600px) {
+  .container {
+    margin: 30px 12px;
+    padding: 24px 16px;
+  }
+
+  button, #download-link {
+    width: 100%;
+    margin-bottom: 14px;
+  }
+
+  h1 {
+    font-size: 1.3em;
+    text-align: center;
+  }
+
+  #out {
+    font-size: 0.9em;
+  }
+}

@@ -20,23 +20,25 @@ fileInput.addEventListener('change', function(e) {
 
   const reader = new FileReader();
   reader.onload = function(evt) {
-    shp(evt.target.result)
-      .then(function(geojson) {
-        const geojsonStr = JSON.stringify(geojson, null, 2);
-        out.textContent = geojsonStr;
-
-        // Prepara el link de descarga
-        const blob = new Blob([geojsonStr], {type: "application/json"});
-        downloadLink.href = URL.createObjectURL(blob);
-        downloadLink.download = "convertido.geojson";
-        downloadLink.style.display = "inline-block";
-        downloadLink.textContent = "Descargar GeoJSON";
-      })
-      .catch(function(e) {
-        showError("❌ No se pudo leer el ZIP. ¿Seguro que es un ZIP de SHP válido?<br>Detalles: " + e);
-        out.textContent = "";
-        downloadLink.style.display = "none";
-      });
+    try {
+      shp(evt.target.result)
+        .then(function(geojson) {
+          const geojsonStr = JSON.stringify(geojson, null, 2);
+          out.textContent = geojsonStr;
+          const blob = new Blob([geojsonStr], {type: "application/json"});
+          downloadLink.href = URL.createObjectURL(blob);
+          downloadLink.download = "convertido.geojson";
+          downloadLink.style.display = "inline-block";
+          downloadLink.textContent = "Descargar GeoJSON ✅";
+        })
+        .catch(function(e) {
+          showError("❌ No se pudo leer el ZIP. ¿Seguro que es un ZIP de SHP válido?<br>Detalles: " + e);
+          out.textContent = "";
+          downloadLink.style.display = "none";
+        });
+    } catch (err) {
+      showError("❌ Error inesperado: " + err.message);
+    }
   };
   reader.readAsArrayBuffer(file);
 });
@@ -49,7 +51,6 @@ function limpiar() {
   downloadLink.style.display = "none";
 }
 
-// Modal de error
 function showError(msg) {
   errorMsg.innerHTML = msg;
   modal.style.display = 'flex';

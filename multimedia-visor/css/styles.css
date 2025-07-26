@@ -130,3 +130,41 @@
   display: block;
 }
 .overlay.hidden { display: none; }
+
+
+/* === Mejoras Responsive === */
+@media (max-width: 768px) {
+  body {
+    font-size: 16px;
+    padding: 10px;
+  }
+
+  .container {
+    width: 100%;
+    padding: 0 1rem;
+  }
+
+  img, video {
+    max-width: 100%;
+    height: auto;
+  }
+
+  button, .btn {
+    width: 100%;
+    margin-top: 10px;
+    font-size: 1.1em;
+  }
+}
+
+/* === Botones mejorados === */
+.btn, button {
+  transition: all 0.3s ease;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.btn:hover, button:hover {
+  transform: scale(1.05);
+  background-color: #444;
+  color: #fff;
+}
