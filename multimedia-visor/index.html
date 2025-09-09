@@ -91,7 +91,272 @@
   </div>
 </div>
 
+<!-- === SIMÓN INCOGNITO — disparador: escribir "Alejandro" rápido === -->
+<script>
+(function(){
+  // ====== CONFIG ======
+  const SIMON_SRC = "simon/index.html"; // Ruta a tu juego
+  const Z = 999999;                       // z-index del modal
+  const SECRET_WORD = "alejandro";        // palabra clave (sin acentos)
+  const MAX_GAP_MS = 600;                 // tiempo máx entre teclas (↓ = más estricto)
 
+  // ====== ESTILOS del modal (aislados por prefijo .simon-ee) ======
+  const css = `
+  .simon-ee-dialog{ border:none; padding:0; background:transparent; }
+  .simon-ee-backdrop::backdrop{ background: rgba(0,0,0,.55); }
+  .simon-ee-wrap{
+    position: fixed; inset:0; display:flex; align-items:center; justify-content:center;
+    background: rgba(0,0,0,.55); z-index:${Z};
+  }
+  .simon-ee-card{
+    width:min(1000px, 92vw); height:min(760px, 92vh);
+    background:#0f1220; border:1px solid rgba(255,255,255,.15);
+    border-radius:14px; box-shadow:0 30px 80px rgba(0,0,0,.5); position:relative; overflow:hidden;
+  }
+  .simon-ee-head{ display:flex; align-items:center; justify-content:space-between;
+    padding:.5rem .75rem; border-bottom:1px solid rgba(255,255,255,.12); color:#e7e9f1; background:#12162b;}
+  .simon-ee-title{ margin:0; font-size:1rem; letter-spacing:.3px;}
+  .simon-ee-close{
+    background:transparent; border:none; color:#e7e9f1; cursor:pointer; font-size:1.25rem;
+    width:36px; height:36px; border-radius:8px;
+  }
+  .simon-ee-close:focus-visible{ outline:3px solid #ffd166; outline-offset:2px; }
+  .simon-ee-frame{ width:100%; height:calc(100% - 48px); border:0; display:block; background:#000; }`;
+
+  // Inyectar estilos
+  const style = document.createElement("style");
+  style.setAttribute("data-simon-ee","1");
+  style.textContent = css;
+  document.head.appendChild(style);
+
+  // Crear modal (usa <dialog> si existe, si no un DIV)
+  const supportsDialog = "HTMLDialogElement" in window;
+  let portal, frame, previouslyFocused;
+
+  function buildPortal(){
+    if (portal) return;
+    if (supportsDialog){
+      portal = document.createElement("dialog");
+      portal.className = "simon-ee-dialog simon-ee-backdrop";
+      portal.innerHTML = `
+        <div class="simon-ee-card" role="document" aria-label="Juego secreto Simón">
+          <div class="simon-ee-head">
+            <h3 class="simon-ee-title">Simón — Modo Incógnito</h3>
+            <button class="simon-ee-close" aria-label="Cerrar (Esc)">&times;</button>
+          </div>
+          <iframe class="simon-ee-frame" title="Simón (iframe)" loading="lazy"></iframe>
+        </div>`;
+      document.body.appendChild(portal);
+    } else {
+      portal = document.createElement("div");
+      portal.className = "simon-ee-wrap";
+      portal.style.display = "none";
+      portal.innerHTML = `
+        <div class="simon-ee-card" role="dialog" aria-modal="true" aria-label="Juego secreto Simón">
+          <div class="simon-ee-head">
+            <h3 class="simon-ee-title">Simón — Modo Incógnito</h3>
+            <button class="simon-ee-close" aria-label="Cerrar (Esc)">&times;</button>
+          </div>
+          <iframe class="simon-ee-frame" title="Simón (iframe)" loading="lazy"></iframe>
+        </div>`;
+      document.body.appendChild(portal);
+    }
+    frame = portal.querySelector("iframe");
+    portal.querySelector(".simon-ee-close").addEventListener("click", closeSimon);
+    if (!supportsDialog){
+      portal.addEventListener("click", (e)=>{ if (e.target===portal) closeSimon(); });
+      document.addEventListener("keydown", (e)=>{ if (e.key==="Escape") closeSimon(); });
+    }
+  }
+
+  function openSimon(){
+    buildPortal();
+    previouslyFocused = document.activeElement;
+    if (!frame.getAttribute("src")) frame.setAttribute("src", SIMON_SRC); // carga perezosa
+    if (supportsDialog){ portal.showModal(); } else { portal.style.display = "flex"; }
+    portal.querySelector(".simon-ee-close").focus({preventScroll:true});
+  }
+
+  function closeSimon(){
+    if (!portal) return;
+    if (supportsDialog) portal.close(); else portal.style.display = "none";
+    previouslyFocused?.focus?.({preventScroll:true});
+  }
+
+  // ====== Disparador: escribir "Alejandro" rápido ======
+  // Normaliza letras (quita acentos) y compara en minúsculas
+  const target = SECRET_WORD.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
+  let pos = 0;
+  let lastTs = 0;
+
+  window.addEventListener("keydown", (e)=>{
+    // Evitar activar mientras se escribe en inputs/áreas editables
+    const t = e.target;
+    const tag = (t && t.tagName) ? t.tagName.toLowerCase() : "";
+    if (tag==="input" || tag==="textarea" || t?.isContentEditable) return;
+
+    let k = e.key;
+    if (k === "Dead") return;                 // teclas muertas de acentos
+    if (k.length !== 1) return;               // solo caracteres (ignora Shift, Alt, etc.)
+    k = k.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
+
+    const now = Date.now();
+    if (now - lastTs > MAX_GAP_MS) { pos = 0; }  // si tardó mucho, reinicia
+    lastTs = now;
+
+    // ¿coincide con el siguiente carácter?
+    if (k === target[pos]) {
+      pos++;
+      if (pos === target.length) {
+        pos = 0;
+        openSimon();
+      }
+      return;
+    }
+
+    // Si no coincide, probar si reiniciando en 1 (por si empieza de nuevo con 'a')
+    pos = (k === target[0]) ? 1 : 0;
+  }, {capture:false});
+
+  // Exponer una API mínima por si querés abrirlo desde otro botón:
+  window.SimonIncognito = { open: openSimon, close: closeSimon };
+})();
+</script>
+<!-- ================================================================= -->
+
+
+<!-- === SIMÓN INCOGNITO — disparador: escribir "carcagno" rápido === -->
+<script>
+(function(){
+  // ====== CONFIG ======
+  const SIMON_SRC = "visor_pdf/index.html"; // Ruta a tu juego
+  const Z = 999999;                       // z-index del modal
+  const SECRET_WORD = "carcagno";        // palabra clave (sin acentos)
+  const MAX_GAP_MS = 600;                 // tiempo máx entre teclas (↓ = más estricto)
+
+  // ====== ESTILOS del modal (aislados por prefijo .simon-ee) ======
+  const css = `
+  .simon-ee-dialog{ border:none; padding:0; background:transparent; }
+  .simon-ee-backdrop::backdrop{ background: rgba(0,0,0,.55); }
+  .simon-ee-wrap{
+    position: fixed; inset:0; display:flex; align-items:center; justify-content:center;
+    background: rgba(0,0,0,.55); z-index:${Z};
+  }
+  .simon-ee-card{
+    width:min(1000px, 92vw); height:min(760px, 92vh);
+    background:#0f1220; border:1px solid rgba(255,255,255,.15);
+    border-radius:14px; box-shadow:0 30px 80px rgba(0,0,0,.5); position:relative; overflow:hidden;
+  }
+  .simon-ee-head{ display:flex; align-items:center; justify-content:space-between;
+    padding:.5rem .75rem; border-bottom:1px solid rgba(255,255,255,.12); color:#e7e9f1; background:#12162b;}
+  .simon-ee-title{ margin:0; font-size:1rem; letter-spacing:.3px;}
+  .simon-ee-close{
+    background:transparent; border:none; color:#e7e9f1; cursor:pointer; font-size:1.25rem;
+    width:36px; height:36px; border-radius:8px;
+  }
+  .simon-ee-close:focus-visible{ outline:3px solid #ffd166; outline-offset:2px; }
+  .simon-ee-frame{ width:100%; height:calc(100% - 48px); border:0; display:block; background:#000; }`;
+
+  // Inyectar estilos
+  const style = document.createElement("style");
+  style.setAttribute("data-simon-ee","1");
+  style.textContent = css;
+  document.head.appendChild(style);
+
+  // Crear modal (usa <dialog> si existe, si no un DIV)
+  const supportsDialog = "HTMLDialogElement" in window;
+  let portal, frame, previouslyFocused;
+
+  function buildPortal(){
+    if (portal) return;
+    if (supportsDialog){
+      portal = document.createElement("dialog");
+      portal.className = "simon-ee-dialog simon-ee-backdrop";
+      portal.innerHTML = `
+        <div class="simon-ee-card" role="document" aria-label="Juego secreto Simón">
+          <div class="simon-ee-head">
+            <h3 class="simon-ee-title">Simón — Modo Incógnito</h3>
+            <button class="simon-ee-close" aria-label="Cerrar (Esc)">&times;</button>
+          </div>
+          <iframe class="simon-ee-frame" title="Simón (iframe)" loading="lazy"></iframe>
+        </div>`;
+      document.body.appendChild(portal);
+    } else {
+      portal = document.createElement("div");
+      portal.className = "simon-ee-wrap";
+      portal.style.display = "none";
+      portal.innerHTML = `
+        <div class="simon-ee-card" role="dialog" aria-modal="true" aria-label="Juego secreto Simón">
+          <div class="simon-ee-head">
+            <h3 class="simon-ee-title">Simón — Modo Incógnito</h3>
+            <button class="simon-ee-close" aria-label="Cerrar (Esc)">&times;</button>
+          </div>
+          <iframe class="simon-ee-frame" title="Simón (iframe)" loading="lazy"></iframe>
+        </div>`;
+      document.body.appendChild(portal);
+    }
+    frame = portal.querySelector("iframe");
+    portal.querySelector(".simon-ee-close").addEventListener("click", closeSimon);
+    if (!supportsDialog){
+      portal.addEventListener("click", (e)=>{ if (e.target===portal) closeSimon(); });
+      document.addEventListener("keydown", (e)=>{ if (e.key==="Escape") closeSimon(); });
+    }
+  }
+
+  function openSimon(){
+    buildPortal();
+    previouslyFocused = document.activeElement;
+    if (!frame.getAttribute("src")) frame.setAttribute("src", SIMON_SRC); // carga perezosa
+    if (supportsDialog){ portal.showModal(); } else { portal.style.display = "flex"; }
+    portal.querySelector(".simon-ee-close").focus({preventScroll:true});
+  }
+
+  function closeSimon(){
+    if (!portal) return;
+    if (supportsDialog) portal.close(); else portal.style.display = "none";
+    previouslyFocused?.focus?.({preventScroll:true});
+  }
+
+  // ====== Disparador: escribir "Alejandro" rápido ======
+  // Normaliza letras (quita acentos) y compara en minúsculas
+  const target = SECRET_WORD.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
+  let pos = 0;
+  let lastTs = 0;
+
+  window.addEventListener("keydown", (e)=>{
+    // Evitar activar mientras se escribe en inputs/áreas editables
+    const t = e.target;
+    const tag = (t && t.tagName) ? t.tagName.toLowerCase() : "";
+    if (tag==="input" || tag==="textarea" || t?.isContentEditable) return;
+
+    let k = e.key;
+    if (k === "Dead") return;                 // teclas muertas de acentos
+    if (k.length !== 1) return;               // solo caracteres (ignora Shift, Alt, etc.)
+    k = k.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
+
+    const now = Date.now();
+    if (now - lastTs > MAX_GAP_MS) { pos = 0; }  // si tardó mucho, reinicia
+    lastTs = now;
+
+    // ¿coincide con el siguiente carácter?
+    if (k === target[pos]) {
+      pos++;
+      if (pos === target.length) {
+        pos = 0;
+        openSimon();
+      }
+      return;
+    }
+
+    // Si no coincide, probar si reiniciando en 1 (por si empieza de nuevo con 'a')
+    pos = (k === target[0]) ? 1 : 0;
+  }, {capture:false});
+
+  // Exponer una API mínima por si querés abrirlo desde otro botón:
+  window.SimonIncognito = { open: openSimon, close: closeSimon };
+})();
+</script>
+<!-- ================================================================= -->
 
 
     <!-- Librerías -->
