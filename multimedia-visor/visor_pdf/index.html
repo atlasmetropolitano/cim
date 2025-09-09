@@ -1,0 +1,359 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Visor PRO — Mafalda (PDF.js, con diagnósticos)</title>
+<style>
+  :root{--bg:#0b1220;--panel:#0f172a;--muted:#94a3b8;--text:#e5e7eb;--accent:#22d3ee;--border:#1e293b;--btn:#162036;--btnH:#1f2a44}
+  *{box-sizing:border-box} html,body{height:100%}
+  body{margin:0;background:linear-gradient(180deg,#081225,#0b1220 60%);color:var(--text);font-family:system-ui,Segoe UI,Roboto,Arial;display:flex;flex-direction:column}
+  header{position:sticky;top:0;z-index:10;background:rgba(15,23,42,.85);backdrop-filter:blur(6px);border-bottom:1px solid var(--border);padding:.6rem .8rem;display:flex;gap:.6rem;align-items:center;flex-wrap:wrap}
+  .brand{font-weight:700} .spacer{flex:1}
+  .toolbar{display:flex;gap:.4rem;flex-wrap:wrap}
+  button,select,input[type="text"],input[type="number"],a.link-btn{background:var(--btn);color:var(--text);border:1px solid var(--border);border-radius:.6rem;padding:.5rem .7rem;font-size:.95rem;text-decoration:none}
+  button:hover,a.link-btn:hover{background:var(--btnH);cursor:pointer}
+  main{flex:1;min-height:0;display:grid;grid-template-columns:260px 1fr;gap:.8rem;padding:.8rem}
+  aside{background:var(--panel);border:1px solid var(--border);border-radius:12px;overflow:auto}
+  .thumbs{display:grid;grid-template-columns:1fr;gap:.5rem;padding:.6rem}
+  .thumb{display:flex;gap:.5rem;align-items:center;background:#0c152a;border:1px solid var(--border);border-radius:.6rem;padding:.4rem;cursor:pointer;transition:transform .08s ease,border-color .08s ease}
+  .thumb:hover{transform:translateY(-1px);border-color:#334155}
+  .thumb.active{outline:2px solid var(--accent)}
+  .thumb canvas{width:70px;height:auto;border-radius:.3rem;background:#0a0f1f}
+  .thumb .meta{font-size:.85rem;color:var(--muted)}
+  section.viewer{background:#0a1020;border:1px solid var(--border);border-radius:12px;display:flex;flex-direction:column;min-height:0;position:relative}
+  .stage{flex:1;min-height:0;display:grid;place-items:center;position:relative;overflow:auto}
+  #pdfCanvas{display:block;max-width:100%;height:auto;background:#0b1020}
+  .pageIndicator{position:absolute;right:.75rem;top:.75rem;padding:.25rem .5rem;font-size:.85rem;color:#0b1220;background:rgba(34,211,238,.9);border-radius:.4rem;font-weight:700}
+  footer{color:var(--muted);font-size:.9rem;padding:0 .9rem .9rem}
+  .row{display:flex;gap:.4rem;align-items:center;flex-wrap:wrap}
+  .sep{width:1px;height:28px;background:#22314b;margin:0 .2rem}
+  #errorBox{position:fixed;left:12px;bottom:12px;max-width:840px;background:#1a1414;color:#fff;border:1px solid #7f1d1d;border-radius:10px;padding:.75rem 1rem;box-shadow:0 10px 30px rgba(0,0,0,.45);display:none}
+  #errorBox strong{color:#fecaca}
+  #hintLocal{font-size:.9rem;opacity:.9}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">📖 Visor PRO — Mafalda</div>
+  <div class="spacer"></div>
+  <div class="toolbar">
+    <div class="row">
+      <button id="prevBtn" title="Página anterior (←)">◀</button>
+      <div class="row">
+        <input id="pageInput" type="number" min="1" value="1" style="width:4.5rem" />
+        <span id="pageCount">/ 1</span>
+      </div>
+      <button id="nextBtn" title="Página siguiente (→)">▶</button>
+    </div>
+    <span class="sep"></span>
+    <div class="row">
+      <button id="zoomOutBtn" title="Alejar (Ctrl/Cmd + -)">−</button>
+      <button id="zoomInBtn"  title="Acercar (Ctrl/Cmd + +)">+</button>
+      <select id="fitMode" title="Modo de ajuste">
+        <option value="page-width">Ajustar ancho</option>
+        <option value="page-fit">Ajustar página</option>
+        <option value="custom" selected>Zoom libre</option>
+      </select>
+      <span id="zoomLabel">100%</span>
+    </div>
+    <span class="sep"></span>
+    <div class="row">
+      <input id="searchInput" type="text" placeholder="Buscar texto…" />
+      <button id="searchBtn" title="Buscar siguiente (Enter)">Buscar</button>
+      <span id="searchInfo" class="muted"></span>
+    </div>
+    <span class="sep"></span>
+    <div class="row">
+      <button id="fullBtn" title="Pantalla completa (F)">Pantalla completa</button>
+      <a id="openBtn" class="link-btn" target="_blank" rel="noopener">Abrir</a>
+      <a id="downloadBtn" class="link-btn" download>Descargar</a>
+    </div>
+  </div>
+</header>
+
+<main>
+  <aside><div class="thumbs" id="thumbs"></div></aside>
+  <section class="viewer" id="viewer">
+    <div class="stage" id="stage">
+      <canvas id="pdfCanvas"></canvas>
+      <div class="pageIndicator" id="pageIndicator">1</div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  Tip: teclas rápidas — ←/→ página, +/− zoom, <strong>F</strong> pantalla completa. <span id="hintLocal">Si abriste con <code>file://</code>, usá un servidor local.</span>
+</footer>
+
+<div id="errorBox"></div>
+
+<!-- Carga PDF.js con fallback de CDN -->
+<script>
+(function injectPdfJs(){
+  function addScript(src, onload){ const s=document.createElement('script'); s.src=src; s.onload=onload; s.onerror=onload; document.head.appendChild(s); }
+  const tryA = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js';
+  const tryB = 'https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.min.js';
+  addScript(tryA, ()=> {
+    if (!window.pdfjsLib) { addScript(tryB, startApp); } else { startApp(); }
+  });
+  function startApp(){
+    if (!window.pdfjsLib){ showError('No se pudo cargar PDF.js desde el CDN. Revisa tu conexión o firewall.'); return; }
+    main();
+  }
+})();
+</script>
+
+<script>
+function showError(msg){
+  const box = document.getElementById('errorBox');
+  box.innerHTML = `<strong>⚠ No se pudo mostrar el PDF.</strong><br>${msg}`;
+  box.style.display = 'block';
+  console.error('[Visor PDF]', msg);
+}
+</script>
+
+<script>
+async function main(){
+  const PDF_PATH = 'mafalda-completa.pdf';
+
+  // Worker (necesario) con fallback
+  const workerA = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+  const workerB = 'https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+  pdfjsLib.GlobalWorkerOptions.workerSrc = workerA;
+
+  // DOM
+  const canvas = document.getElementById('pdfCanvas'), ctx = canvas.getContext('2d');
+  const thumbs = document.getElementById('thumbs');
+  const pageIndicator = document.getElementById('pageIndicator');
+  const stage = document.getElementById('stage');
+  const viewer = document.getElementById('viewer');
+
+  const prevBtn = document.getElementById('prevBtn');
+  const nextBtn = document.getElementById('nextBtn');
+  const pageInput = document.getElementById('pageInput');
+  const pageCountSpan = document.getElementById('pageCount');
+  const zoomInBtn = document.getElementById('zoomInBtn');
+  const zoomOutBtn = document.getElementById('zoomOutBtn');
+  const zoomLabel = document.getElementById('zoomLabel');
+  const fitMode = document.getElementById('fitMode');
+  const searchInput = document.getElementById('searchInput');
+  const searchBtn = document.getElementById('searchBtn');
+  const searchInfo = document.getElementById('searchInfo');
+  const fullBtn = document.getElementById('fullBtn');
+  const openBtn = document.getElementById('openBtn');
+  const downloadBtn = document.getElementById('downloadBtn');
+  openBtn.href = PDF_PATH; downloadBtn.href = PDF_PATH;
+
+  // Diagnóstico rápido: ¿existe el PDF?
+  try{
+    const probe = await fetch(PDF_PATH, { method:'HEAD' });
+    if (!probe.ok) {
+      const why = location.protocol === 'file:' 
+        ? 'Estás abriendo el HTML con file:// (modo local). Algunos navegadores bloquean el acceso a archivos locales desde scripts.'
+        : 'La ruta del PDF puede ser incorrecta (nombre o carpeta).';
+      showError(`No se encontró el archivo <code>${PDF_PATH}</code> (status ${probe.status}). ${why}`);
+      return;
+    }
+  }catch(e){
+    if (location.protocol === 'file:'){
+      showError(`Estás en <code>file://</code>. PDF.js suele requerir servidor HTTP por políticas del navegador.<br>
+      <em>Solución express:</em> VSCode Live Server, o <code>python -m http.server 8000</code> en esta carpeta.`);
+    } else {
+      showError(`No se pudo acceder a <code>${PDF_PATH}</code>. Posible CORS o ruta incorrecta. Detalle: ${e.message}`);
+    }
+    return;
+  }
+
+  // ===== Estado y helpers (con FIX de cola de render) =====
+  let pdfDoc = null;
+  let currentPage = 1;
+  let totalPages = 1;
+  let scale = 1.0;
+  let rendering = false;
+  // pendingPage ahora es objeto {num, scrollIntoView}
+  let pendingPage = null;
+  let searchTerm = '';
+  let searchHits = [];
+  let searchIndex = -1;
+
+  function updateZoomLabel(){ zoomLabel.textContent = Math.round(scale*100)+'%'; }
+  function calcFitScale(mode, viewport){
+    const pad=32, availW=stage.clientWidth-pad, availH=stage.clientHeight-pad;
+    if (mode==='page-width') return availW/viewport.width;
+    if (mode==='page-fit')   return Math.min(availW/viewport.width, availH/viewport.height);
+    return scale;
+  }
+  function updateNavButtons(){
+    prevBtn.disabled = (currentPage <= 1);
+    nextBtn.disabled = (currentPage >= totalPages);
+  }
+
+  async function renderPage(num, scrollIntoView = false){
+    if (rendering){ pendingPage = { num, scrollIntoView }; return; }
+    rendering = true;
+
+    let page;
+    try{ page = await pdfDoc.getPage(num); }
+    catch(e){ showError(`No pude leer la página ${num}. Detalle: ${e.message}`); rendering=false; return; }
+
+    const viewport0 = page.getViewport({scale:1});
+    const desiredScale = (fitMode.value==='custom') ? scale : calcFitScale(fitMode.value, viewport0);
+    scale = desiredScale; updateZoomLabel();
+
+    const viewport = page.getViewport({scale});
+    canvas.width = Math.floor(viewport.width);
+    canvas.height = Math.floor(viewport.height);
+
+    try{ await page.render({canvasContext: ctx, viewport}).promise; }
+    catch(e){ showError(`Error al renderizar: ${e.message}`); rendering=false; return; }
+
+    pageIndicator.textContent = String(num);
+    pageInput.value = String(num);
+    highlightActiveThumb(num);
+    updateNavButtons();
+
+    if (scrollIntoView){
+      stage.scrollTo({
+        top: Math.max(0, (canvas.height - stage.clientHeight)/2),
+        left: Math.max(0, (canvas.width - stage.clientWidth)/2),
+        behavior: 'smooth'
+      });
+    }
+
+    rendering = false;
+    if (pendingPage){
+      const { num: nextNum, scrollIntoView: nextCenter } = pendingPage;
+      pendingPage = null;
+      renderPage(nextNum, nextCenter);
+    }
+  }
+
+  function queueRender(num, center = false){
+    if (rendering){
+      pendingPage = { num, scrollIntoView: center };
+    } else {
+      renderPage(num, center);
+    }
+  }
+
+  function showPage(num, center = false){
+    if (num < 1 || num > totalPages) return;
+    currentPage = num;
+    pageIndicator.textContent = String(num);
+    queueRender(num, center);
+  }
+
+  function zoom(delta){
+    fitMode.value='custom';
+    scale = Math.min(4, Math.max(0.2, scale * (delta>0 ? 1.1 : 0.9)));
+    updateZoomLabel();
+    queueRender(currentPage);
+  }
+
+  // Miniaturas (lazy)
+  function createThumb(pageNumber){
+    const wrap=document.createElement('div'); wrap.className='thumb'; wrap.dataset.page=pageNumber;
+    const c=document.createElement('canvas'); c.width=140; c.height=200;
+    const meta=document.createElement('div'); meta.className='meta'; meta.textContent='Pág. '+pageNumber;
+    wrap.appendChild(c); wrap.appendChild(meta); wrap.addEventListener('click', ()=>showPage(pageNumber,true));
+    thumbs.appendChild(wrap);
+    const io=new IntersectionObserver(async (entries,obs)=>{
+      for (const e of entries){ if(e.isIntersecting){
+        const page=await pdfDoc.getPage(pageNumber);
+        const viewport=page.getViewport({scale: c.width / page.getViewport({scale:1}).width});
+        c.height=Math.floor(viewport.height);
+        const ctxT=c.getContext('2d'); await page.render({canvasContext:ctxT, viewport}).promise;
+        obs.unobserve(wrap);
+      }}
+    },{root:thumbs, rootMargin:'200px'});
+    io.observe(wrap);
+  }
+  function highlightActiveThumb(n){ document.querySelectorAll('.thumb').forEach(el=>el.classList.toggle('active', Number(el.dataset.page)===n)); }
+
+  // Búsqueda simple (salta a páginas con coincidencia)
+  async function buildSearchIndex(term){
+    searchHits=[]; searchIndex=-1; searchInfo.textContent='';
+    if(!term||!term.trim()) return;
+    const q=term.toLowerCase();
+    for(let p=1;p<=totalPages;p++){
+      const page=await pdfDoc.getPage(p);
+      const txt=await page.getTextContent();
+      const joined=txt.items.map(t=>t.str).join(' ').toLowerCase();
+      if(joined.includes(q)) searchHits.push(p);
+      if(searchHits.length>500) break;
+    }
+    if(searchHits.length){ searchIndex=0; searchInfo.textContent=`Coincidencias: ${searchHits.length}`; showPage(searchHits[0],true); }
+    else { searchInfo.textContent='Sin coincidencias'; }
+  }
+  function nextSearch(){ if(!searchHits.length) return; searchIndex=(searchIndex+1)%searchHits.length; searchInfo.textContent=`Coincidencia ${searchIndex+1}/${searchHits.length}`; showPage(searchHits[searchIndex], true); }
+
+  // ===== Eventos UI =====
+  prevBtn.addEventListener('click', () => { if (currentPage > 1) showPage(currentPage - 1, true); });
+  nextBtn.addEventListener('click', () => { if (currentPage < totalPages) showPage(currentPage + 1, true); });
+  pageInput.addEventListener('change', () => {
+    const n = Number(pageInput.value);
+    if (!Number.isFinite(n)) return;
+    showPage(Math.min(Math.max(1, n), totalPages), true);
+  });
+
+  zoomInBtn.addEventListener('click', ()=>zoom(+1));
+  zoomOutBtn.addEventListener('click', ()=>zoom(-1));
+  fitMode.addEventListener('change', ()=>queueRender(currentPage));
+
+  searchBtn.addEventListener('click', ()=>{ const v=searchInput.value.trim(); if(searchTerm!==v){ searchTerm=v; buildSearchIndex(v); } else { nextSearch(); }});
+  searchInput.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); searchBtn.click(); }});
+
+  document.addEventListener('keydown', (e)=>{
+    const tag = (document.activeElement?.tagName || '').toLowerCase();
+    const typing = tag === 'input' || tag === 'textarea';
+    const k=e.key.toLowerCase();
+    if (!typing && k==='arrowleft'){ e.preventDefault(); prevBtn.click(); }
+    if (!typing && k==='arrowright'){ e.preventDefault(); nextBtn.click(); }
+    if ((e.ctrlKey||e.metaKey)&&(k==='='||k==='+')){ e.preventDefault(); zoomInBtn.click(); }
+    if ((e.ctrlKey||e.metaKey)&&k==='-'){ e.preventDefault(); zoomOutBtn.click(); }
+    if (k==='f'){ e.preventDefault(); toggleFull(); }
+  });
+
+  async function toggleFull(){
+    if(!document.fullscreenElement){ await viewer.requestFullscreen().catch(()=>{}); }
+    else { await document.exitFullscreen().catch(()=>{}); }
+  }
+  fullBtn.addEventListener('click', toggleFull);
+
+  // ===== Carga del PDF =====
+  let loadingTask;
+  try{
+    loadingTask = pdfjsLib.getDocument({ url: PDF_PATH, disableRange: true });
+    pdfDoc = await loadingTask.promise;
+  }catch(e){
+    // Fallback de worker
+    try{
+      pdfjsLib.GlobalWorkerOptions.workerSrc = workerB;
+      loadingTask = pdfjsLib.getDocument({ url: PDF_PATH, disableRange: true });
+      pdfDoc = await loadingTask.promise;
+    }catch(e2){
+      showError(`No pude abrir <code>${PDF_PATH}</code>.<br><strong>Causas típicas:</strong> (1) abierto con <code>file://</code>, (2) CORS en el servidor, (3) nombre/ruta incorrecta.<br>Detalle: ${e2.message}`);
+      return;
+    }
+  }
+
+  totalPages = pdfDoc.numPages;
+  pageCountSpan.textContent = '/ ' + totalPages;
+  updateNavButtons();
+
+  for(let i=1;i<=totalPages;i++){ createThumb(i); }
+  renderPage(1);
+
+  // Re-render al redimensionar (para page-width/page-fit)
+  let t=null;
+  window.addEventListener('resize', ()=>{
+    if (fitMode.value!=='custom'){
+      clearTimeout(t); t=setTimeout(()=>renderPage(currentPage),120);
+    }
+  });
+}
+</script>
+</body>
+</html>
+
