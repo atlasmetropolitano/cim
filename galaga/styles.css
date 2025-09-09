@@ -1,0 +1,112 @@
+:root{
+  --bg:#0b0f1a;
+  --fg:#d2e4ff;
+  --muted:#8aa0c6;
+  --accent:#59f;
+  --danger:#ff5a7a;
+  --ok:#4fe38c;
+  --panel:#111827cc;
+}
+
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;background:radial-gradient(120% 120% at 50% 0%, #101826 0%, #05070c 80%);}
+body{color:var(--fg);font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial,sans-serif}
+
+#app{min-height:100%;display:flex;flex-direction:column;align-items:center}
+
+.topbar{
+  width:min(100%, 700px);
+  display:flex;justify-content:space-between;align-items:center;
+  gap:8px;padding:10px 12px;margin-top:4px;
+  background:var(--panel);backdrop-filter:blur(6px);
+  border:1px solid #1f2636;border-radius:12px;color:var(--fg)
+}
+.brand{font-weight:700;letter-spacing:.5px}
+.controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.controls .ctrl{display:flex;align-items:center;gap:6px;color:var(--muted);font-size:14px}
+.controls select{
+  appearance:none;background:#0d1524;color:var(--fg);
+  border:1px solid #2a344d;border-radius:10px;padding:8px 28px 8px 10px;
+  background-image: linear-gradient(45deg,transparent 50%,#7fa3ff 50%),linear-gradient(135deg,#7fa3ff 50%,transparent 50%);
+  background-position: calc(100% - 18px) 50%, calc(100% - 12px) 50%;
+  background-size: 6px 6px, 6px 6px; background-repeat:no-repeat;
+}
+.controls button{
+  background:#1b2436;border:1px solid #2a344d;color:#cde2ff;
+  padding:8px 10px;border-radius:10px;cursor:pointer
+}
+.controls button:active{transform:translateY(1px)}
+
+.stage{
+  position:relative;
+  width:min(100vw, 95vmin);
+  max-width:700px;
+  aspect-ratio:3/4;
+  display:flex;justify-content:center;align-items:center;
+  margin:10px 0;
+}
+
+canvas#game{
+  width:100%;height:100%;
+  image-rendering:pixelated;
+  border:1px solid #1f2636;border-radius:16px;background:#000;
+}
+
+/* HUD mobile */
+.hud-btn{
+  position:absolute;z-index:3;
+  background:#1b2436e6;border:1px solid #2a344d;color:#e7f1ff;
+  border-radius:14px;padding:10px 14px;font-size:18px;
+  touch-action:manipulation;user-select:none;
+}
+.hud-btn:active{transform:translateY(1px)}
+.hud-btn.fire{right:8px;bottom:8px}
+.hud-btn.pause{left:8px;bottom:8px}
+
+.touch-layer{ position:absolute;inset:auto 0 0 0;height:34%;z-index:2; }
+
+/* Overlays */
+.overlay{
+  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  background:#0007;backdrop-filter:blur(2px);z-index:4;
+}
+.hidden{display:none}
+
+.panel{
+  width:min(92%, 420px);
+  background:#0f172acc;border:1px solid #26314a;border-radius:14px;
+  padding:16px;color:var(--fg);
+  box-shadow:0 10px 40px #0008;
+}
+.panel h3{margin:0 0 8px 0}
+.panel p{margin:0 0 12px 0;color:var(--muted)}
+.panel input{
+  width:100%;padding:10px;border-radius:10px;border:1px solid #2a344d;
+  background:#0d1524;color:var(--fg);outline:none
+}
+.panel-actions{margin-top:12px;display:flex;gap:8px;justify-content:flex-end}
+.panel-actions button{
+  background:#1b2436;border:1px solid #2a344d;color:#d8e7ff;
+  padding:8px 12px;border-radius:10px;cursor:pointer
+}
+.panel-actions button.danger{border-color:#5a2030;background:#2a0f18;color:#ffc9d2}
+.panel-actions button:active{transform:translateY(1px)}
+
+.board{ margin:8px 0 0 0;padding-left:20px;max-height:50vh;overflow:auto }
+.board li{margin:4px 0;color:#dfe9ff}
+.board li span{color:#8fa6cc}
+
+/* Footer */
+.foot{width:min(100%,700px);padding:8px 4px;color:var(--muted);text-align:center}
+
+kbd{
+  background:#111a2a;border:1px solid #1f2636;border-bottom-color:#0d1320;
+  padding:1px 5px;border-radius:6px;color:#cfe3ff
+}
+
+button:focus-visible, select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+@media (max-width:420px){
+  .hud-btn{padding:12px 16px;font-size:20px}
+}
+

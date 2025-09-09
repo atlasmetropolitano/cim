@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Simón</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar" role="banner">
+    <div class="brand">
+      <h1>Simón</h1>
+      <p class="subtitle">Repite la secuencia. Superá tu récord. 🧠⚡</p>
+    </div>
+
+    <div class="scoreboard" aria-live="polite">
+      <div class="score">
+        <span class="label">Ronda</span>
+        <strong id="roundValue">0</strong>
+      </div>
+      <div class="score">
+        <span class="label">Nivel</span>
+        <strong id="levelValue">1</strong>
+      </div>
+      <div class="score">
+        <span class="label">Puntaje</span>
+        <strong id="scoreValue">0</strong>
+      </div>
+      <div class="score">
+        <span class="label">Tiempo</span>
+        <strong id="timeValue">00:00.0</strong>
+      </div>
+      <!-- NUEVO: tiempo regresivo por paso -->
+      <div class="score">
+        <span class="label">Restante</span>
+        <strong id="remainValue">—</strong>
+      </div>
+      <div class="score best">
+        <span class="label">Mejor</span>
+        <strong id="bestValue">0</strong>
+      </div>
+    </div>
+  </header>
+
+  <main class="layout" role="main">
+    <section class="board" aria-label="Tablero de juego">
+      <button id="btn-green" class="pad pad--green"
+        role="button" aria-label="Verde (tecla A)" aria-pressed="false"
+        data-color="green" data-key="A" tabindex="0">
+        <span class="pad-shape pad-shape--circle" aria-hidden="true"></span>
+        <span class="pad-key">A</span>
+      </button>
+
+      <button id="btn-red" class="pad pad--red"
+        role="button" aria-label="Rojo (tecla S)" aria-pressed="false"
+        data-color="red" data-key="S" tabindex="0">
+        <span class="pad-shape pad-shape--triangle" aria-hidden="true"></span>
+        <span class="pad-key">S</span>
+      </button>
+
+      <button id="btn-yellow" class="pad pad--yellow"
+        role="button" aria-label="Amarillo (tecla K)" aria-pressed="false"
+        data-color="yellow" data-key="K" tabindex="0">
+        <span class="pad-shape pad-shape--square" aria-hidden="true"></span>
+        <span class="pad-key">K</span>
+      </button>
+
+      <button id="btn-blue" class="pad pad--blue"
+        role="button" aria-label="Azul (tecla L)" aria-pressed="false"
+        data-color="blue" data-key="L" tabindex="0">
+        <span class="pad-shape pad-shape--diamond" aria-hidden="true"></span>
+        <span class="pad-key">L</span>
+      </button>
+    </section>
+
+    <aside class="sidepanel" aria-label="Controles y récords">
+      <div class="controls">
+        <h2 class="panel-title">Controles</h2>
+
+        <div class="control-row">
+          <button id="startBtn" class="btn btn--primary" title="Iniciar (o reanudar)">▶ Iniciar</button>
+          <button id="pauseBtn" class="btn" title="Pausar/Continuar">⏸ Pausar</button>
+          <button id="resetBtn" class="btn btn--ghost" title="Reiniciar partida">↺ Reiniciar</button>
+        </div>
+
+        <div class="control-row">
+          <label class="field">
+            <span>Dificultad</span>
+            <select id="difficultySelect" aria-label="Seleccionar dificultad">
+              <option value="easy">Fácil</option>
+              <option value="medium" selected>Medio</option>
+              <option value="hard">Difícil</option>
+              <option value="progressive">Progresivo (sube solo)</option>
+            </select>
+          </label>
+
+          <label class="toggle">
+            <input id="strictToggle" type="checkbox" />
+            <span>Modo estricto</span>
+          </label>
+        </div>
+
+        <div class="control-row">
+          <button id="muteBtn" class="btn" title="Sonido ON/OFF" aria-pressed="false">🔊 Sonido</button>
+        </div>
+
+        <p class="help">
+          <strong>Teclas:</strong> A (verde), S (rojo), K (amarillo), L (azul).
+          Enter/Espacio activan botones enfocados. Tab para navegar.
+        </p>
+
+        <div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true" hidden></div>
+      </div>
+
+      <div class="records">
+        <h2 class="panel-title">Tabla de récords</h2>
+        <div class="records-actions">
+          <button id="clearRecordsBtn" class="btn btn--danger">🗑 Borrar récords</button>
+        </div>
+        <div class="table-wrapper">
+          <table class="table" aria-describedby="tablaRecordDesc">
+            <caption id="tablaRecordDesc" class="sr-only">Top 10 récords guardados localmente</caption>
+            <thead>
+              <tr>
+                <th scope="col">#</th>
+                <th scope="col">Nombre</th>
+                <th scope="col">Puntaje</th>
+                <th scope="col">Fecha</th>
+              </tr>
+            </thead>
+            <tbody id="recordsBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <!-- Modal Guardar Récord -->
+  <dialog id="recordModal" aria-labelledby="recordModalTitle">
+    <form method="dialog" id="recordForm" novalidate>
+      <h3 id="recordModalTitle">Guardar récord</h3>
+      <p>¡Buen intento! Guardá tu puntaje en la tabla.</p>
+
+      <label class="field">
+        <span>Nombre (3–12 caracteres)</span>
+        <input id="recordName" name="name" type="text" minlength="3" maxlength="12" required
+               autocomplete="name" placeholder="Tu nombre" />
+      </label>
+
+      <div class="modal-actions">
+        <button value="cancel" class="btn btn--ghost">Cancelar</button>
+        <button id="saveRecordBtn" class="btn btn--primary" value="default">Guardar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- NUEVO: overlay de countdown -->
+  <div id="countdownOverlay" class="countdown" aria-live="assertive" aria-atomic="true" hidden></div>
+
+  <div id="confettiContainer" aria-hidden="true"></div>
+
+  <footer class="footer">
+    <small>Hecho con ❤️ y JavaScript puro — Licencia MIT</small>
+  </footer>
+
+  <script src="app.js" defer></script>
+</body>
+</html>

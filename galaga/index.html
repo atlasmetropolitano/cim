@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>Galaga Web ULTRA (Vanilla)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="app">
+    <header class="topbar">
+      <div class="brand">Galaga ULTRA</div>
+      <div class="controls">
+        <label class="ctrl">
+          Dificultad
+          <select id="difficultySelect" title="Dificultad">
+            <option value="easy">Fácil</option>
+            <option value="normal" selected>Normal</option>
+            <option value="hard">Difícil</option>
+          </select>
+        </label>
+        <button id="btnSprites" aria-label="Usar sprites" title="Sprites ON/OFF">🖼️</button>
+        <button id="btnBoard" aria-label="Ver récords" title="Tabla de récords">🏆</button>
+        <button id="btnMute" aria-label="Silenciar/Activar sonido" title="M (Mute)">🔈</button>
+        <button id="btnDaltonico" aria-label="Modo daltónico" title="Modo daltónico ON/OFF">🎯</button>
+      </div>
+    </header>
+
+    <div class="stage">
+      <canvas id="game" width="480" height="640" aria-label="Juego Galaga"></canvas>
+
+      <!-- Banda táctil inferior para mover -->
+      <div id="touchLayer" class="touch-layer" aria-hidden="true"></div>
+      <!-- Botones HUD mobile -->
+      <button id="fireBtn" class="hud-btn fire" aria-label="Disparar">🔥</button>
+      <button id="pauseBtn" class="hud-btn pause" aria-label="Pausar">⏸</button>
+
+      <!-- Overlays UI -->
+      <div id="overlay" class="overlay hidden" role="dialog" aria-modal="true">
+        <!-- Prompt de nombre para récord -->
+        <div id="namePrompt" class="panel hidden">
+          <h3>¡Nuevo récord!</h3>
+          <p>Ingresá tu nombre para la tabla (máx. 12 caracteres):</p>
+          <input id="nameInput" maxlength="12" placeholder="Tu nombre" autocomplete="name" />
+          <div class="panel-actions">
+            <button id="nameOk">Guardar</button>
+            <button id="nameSkip">Omitir</button>
+          </div>
+        </div>
+
+        <!-- Tabla de récords -->
+        <div id="boardPanel" class="panel hidden">
+          <h3>🏆 Tabla de récords</h3>
+          <ol id="boardList" class="board"></ol>
+          <div class="panel-actions">
+            <button id="boardClose">Cerrar</button>
+            <button id="boardReset" class="danger">Reiniciar tabla</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <footer class="foot">
+      <small>
+        Controles: ←/→ o A/D mover · <kbd>Espacio</kbd> disparar · <kbd>P</kbd> pausa · <kbd>M</kbd> mute.
+        Mobile: arrastrá abajo para mover · 🔥 dispara.
+      </small>
+    </footer>
+  </div>
+
+  <script defer src="game.js"></script>
+</body>
+</html>
+
