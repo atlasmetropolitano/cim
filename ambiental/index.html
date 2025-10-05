@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visualizador de Mapa</title>
+    <style>
+        /* Estilos generales para la página */
+        body {
+            font-family: sans-serif;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+
+        /* --- ESTILOS PARA "ACOMODAR" TU CÓDIGO --- */
+
+        /* Estilos para el contenedor del mapa */
+        .map-wrapper {
+            /* 1. Tamaño y centrado */
+            max-width: 1500px; /* Ancho máximo */
+            height: 900px;     /* Altura fija */
+            margin: 20px auto; /* Centra el bloque en la página */
+
+            /* 2. Barra de desplazamiento */
+            overflow: auto;    /* Agrega scroll si el contenido se desborda */
+
+            /* 3. Estilos visuales (borde, sombra) */
+            border: 1px solid #ccc;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            background-color: #fff; /* Fondo blanco por si la app tarda en cargar */
+        }
+
+        /* Estilos para el iframe dentro del contenedor */
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none; /* Quita el borde por defecto del iframe */
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Monitor Ambiental Interactivo</h1>
+
+    <div class="map-wrapper">
+        <iframe src="https://acarcag.users.earthengine.app/view/ambientaldifindices"></iframe>
+    </div>
+
+</body>
+</html>

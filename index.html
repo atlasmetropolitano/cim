@@ -133,6 +133,10 @@ min-width: 160px;
                  🎬
             </button>
 
+            <button class="tool-btn" title="Ambiental" onclick="ambiental()">
+                 🌳
+            </button>
+
         <!-- 🧭 Botón de geolocalización -->
         <button class="tool-btn" id="btn-locate-user" title="Mi ubicación">
             <i class="fas fa-location-crosshairs"></i>
@@ -979,11 +983,17 @@ document.querySelectorAll(".fab-option").forEach(btn => {
   </script>
   
   
-    <script>
+<script>
     function abrirMultimedia() {
         window.open("multimedia-visor/index.html", "_blank");
     }
-    </script>
+</script>
+
+<script>
+    function ambiental() {
+        window.open("ambiental/index.html", "_blank");
+    }
+</script>
 
     <!-- === SIMÓN INCOGNITO — disparador: escribir "Alejandro" rápido === -->
 <script>
