@@ -47,6 +47,11 @@
 
 
         <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+        <style>
+  .tool-btn[disabled]{ opacity:.5; cursor:not-allowed; }
+</style>
+
         
     </head>
 
@@ -132,6 +137,13 @@ min-width: 160px;
             <button class="tool-btn" title="Abrir visor multimedia" onclick="abrirMultimedia()">
                  🎬
             </button>
+            <button id="btn-remove-mm" class="tool-btn" title="Quitar capa multimedia"
+        onclick="eliminarMultimedia()" disabled aria-disabled="true">🗑️</button>
+        
+        <button class="tool-btn" title="Convertir SHP/ZIP a GeoJSON"
+        onclick="window.open('conversor/index.html', '_blank')">🔧</button>
+
+        
 
             <button class="tool-btn" title="Ambiental" onclick="ambiental()">
                  🌳
@@ -619,7 +631,7 @@ document.addEventListener("click", e => {
             id: "accordion-urban",
             title: "CARACTERÍSTICAS URBANÍSTICAS",
             items: [
-                { label: "Area de Estudio", file: "capa_base.geojson", atributo: "NAM" },
+                { label: "AMBA", file: "3411.geojson", atributo: "" },
                 { label: "Ocupación del Suelo", file: "512.geojson", atributo: "Area" },
                 { label: "Equipamiento", file: "3312.geojson", atributo: "Sum_MATRIC" },
                 { label: "Infraestructura", file: "3411.geojson", atributo: "Tipo_RUTA" }
@@ -649,7 +661,7 @@ document.addEventListener("click", e => {
                 { label: "Vivienda", file: "522.geojson", atributo: "PVII22" },
                 { label: "Servicios básicos", file: "512.geojson", atributo: "F_PADEDP22" },
                 { label: "Nivel socioeconómico", file: "data/nivel_socio.geojson" },
-                { label: "Necesidades básicas insatisfechas", file: "nbi2022.geojson", atributo: "F__NBI" },
+                { label: "NBI", file: "nbi2022.geojson", atributo: "F__NBI" },
                 { label: "Educación", file: "data/educacion.geojson" }
             ]
         },
@@ -1260,6 +1272,180 @@ document.querySelectorAll(".fab-option").forEach(btn => {
   window.SimonIncognito = { open: openSimon, close: closeSimon };
 })();
 </script>
+
+<!-- 🔒 Input oculto para el VISOR MULTIMEDIA integrado -->
+<input type="file" id="multimedia-input" accept=".geojson" style="display:none">
+
+<style>
+  .media-modal{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);
+    background:#111;color:#eee;padding:18px;border-radius:12px;z-index:10001;
+    max-width:min(92vw,720px);box-shadow:0 10px 40px rgba(0,0,0,.5)}
+  .media-modal.hidden{display:none}
+  .media-modal video,.media-modal img{max-width:100%;height:auto;border-radius:8px;margin-top:10px}
+  .media-modal .modal-title{font-weight:600;margin-bottom:6px}
+  .media-modal .modal-sub{opacity:.8;margin-bottom:12px}
+  .media-modal .modal-btns{display:flex;gap:10px;flex-wrap:wrap}
+  .media-modal .modal-btns button{padding:.5rem .75rem;border-radius:.6rem;border:0;cursor:pointer}
+  .overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:10000}
+  .overlay.hidden{display:none}
+  .close-modal{position:absolute;top:8px;right:10px;background:transparent;border:0;color:#fff;font-size:22px;cursor:pointer}
+</style>
+<div id="mediaModal" class="media-modal hidden"></div>
+<div id="overlay" class="overlay hidden"></div>
+
+
+<script>
+(function(){
+  if (window.__MM_PATCHED_SAFE_V3__) return;
+  window.__MM_PATCHED_SAFE_V3__ = true;
+
+  const input   = document.getElementById('multimedia-input');
+  const modal   = document.getElementById('mediaModal');
+  const overlay = document.getElementById('overlay');
+
+  // 🎯 Referencia al botón 🗑️ (con fallback por title si no le pusiste id)
+  const btnRemove = document.getElementById('btn-remove-mm')
+                   || document.querySelector('button[title="Quitar capa multimedia"]');
+
+  // Habilita/deshabilita el botón 🗑️ de forma segura
+  function setRemoveState(enabled){
+    if (!btnRemove) return;
+    btnRemove.disabled = !enabled;
+    btnRemove.setAttribute('aria-disabled', String(!enabled));
+  }
+  // Arrancamos deshabilitado
+  setRemoveState(false);
+
+  // ===== Utilidades de escape =====
+  function escHtml(s){ return String(s ?? '')
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function escAttr(s){ return String(s ?? '')
+    .replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+
+  const metaTitleKeys = ['titulo','title','nombre','name','id'];
+  const metaDescKeys  = ['descripcion','description','desc','detalle'];
+
+  function getMeta(props){
+    const title = metaTitleKeys.map(k => props?.[k]).find(v => v!=null && String(v).trim()!=='') || 'Entidad seleccionada';
+    const desc  = metaDescKeys .map(k => props?.[k]).find(v => v!=null && String(v).trim()!=='') || '';
+    return { title: String(title), desc: String(desc) };
+  }
+
+  function closeModal(){
+    modal.classList.add('hidden'); overlay.classList.add('hidden'); modal.innerHTML = '';
+  }
+  overlay?.addEventListener('click', closeModal);
+  window.addEventListener('keydown', (e)=>{ if(e.key==='Escape') closeModal(); });
+  window.closeModal = closeModal;
+
+  function renderHeader(meta){
+    const t = escHtml(meta.title), d = escHtml(meta.desc);
+    return `<div class="modal-title">${t}</div>${d ? `<div class="modal-sub">${d}</div>` : ''}`;
+  }
+
+  function showModal(type, url, meta){
+    let content = '';
+    if (type === 'audio') content = `<audio controls autoplay src="${escAttr(url)}"></audio>`;
+    if (type === 'video') content = `<video controls autoplay src="${escAttr(url)}"></video>`;
+    if (type === 'img')   content = `<img src="${escAttr(url)}" alt="Imagen asociada">`;
+
+    modal.innerHTML = `<button class="close-modal" title="Cerrar" onclick="closeModal()">✖</button>${renderHeader(meta)}${content}`;
+    modal.classList.remove('hidden'); overlay.classList.remove('hidden');
+  }
+
+  function buildMediaOptions(props){
+    const opts = [];
+    if (props?.audio_url) opts.push({type:'audio', label:'🎧 Audio',  url:props.audio_url});
+    if (props?.video_url) opts.push({type:'video', label:'🎬 Video',  url:props.video_url});
+    if (props?.img_url)   opts.push({type:'img',   label:'🖼️ Imagen', url:props.img_url});
+    return opts;
+  }
+
+  // Delegación de eventos dentro del modal (sin inline onclick)
+  modal.addEventListener('click', (ev)=>{
+    const btn = ev.target.closest('[data-mm="1"]');
+    if (!btn) return;
+    const type = btn.getAttribute('data-type');
+    const url  = btn.getAttribute('data-url');
+    const meta = JSON.parse(decodeURIComponent(btn.getAttribute('data-meta')));
+    showModal(type, url, meta);
+  });
+
+  function showMediaChooser(props){
+    const meta = getMeta(props);
+    const opts = buildMediaOptions(props);
+
+    if (opts.length === 0){
+      modal.innerHTML = `<button class="close-modal" onclick="closeModal()">✖</button>
+        ${renderHeader(meta)}<div>No hay multimedia (audio_url, video_url o img_url).</div>`;
+      modal.classList.remove('hidden'); overlay.classList.remove('hidden'); return;
+    }
+    if (opts.length === 1){ showModal(opts[0].type, opts[0].url, meta); return; }
+
+    const metaEnc = encodeURIComponent(JSON.stringify(meta));
+    const buttons = opts.map(o =>
+      `<button data-mm="1" data-type="${escAttr(o.type)}" data-url="${escAttr(o.url)}" data-meta="${metaEnc}">${o.label}</button>`
+    ).join('');
+
+    modal.innerHTML = `<button class="close-modal" onclick="closeModal()">✖</button>
+      ${renderHeader(meta)}<div class="modal-btns">${buttons}</div>`;
+    modal.classList.remove('hidden'); overlay.classList.remove('hidden');
+  }
+
+  // ===== Estado de la capa =====
+  let multimediaLayer = null;
+
+  // Botón 🗑️ (API pública)
+  window.eliminarMultimedia = function(){
+    if (!multimediaLayer){ alert('No hay capa multimedia cargada.'); return; }
+    try { window.map.removeLayer(multimediaLayer); } catch(e){}
+    multimediaLayer = null;
+    try { delete window.lastGeojsonData; } catch(e){}
+    setRemoveState(false); // 🔒 deshabilitar
+    closeModal();
+  };
+
+  // ===== Flujo principal =====
+  function handleGeoJSON(geojson){
+    if (multimediaLayer) { try { window.map.removeLayer(multimediaLayer); } catch(e){} multimediaLayer = null; }
+    if (!geojson?.features?.length){ alert("❌ El archivo no contiene entidades."); setRemoveState(false); return; }
+
+    multimediaLayer = L.geoJSON(geojson, {
+      onEachFeature: (feature, layer) => {
+        layer.on('click', () => showMediaChooser(feature.properties || {}));
+      },
+      style: { color:"#ca7d3d", weight:2, fillOpacity:0.3 }
+    }).addTo(window.map);
+
+    try { window.map.fitBounds(multimediaLayer.getBounds(), {padding:[20,20]}); } catch(e){}
+    window.lastGeojsonData = geojson;
+
+    setRemoveState(true); // ✅ habilitar
+  }
+
+  // Botón 🎬
+  window.abrirMultimedia = function(){ input.click(); };
+
+  // Lectura del archivo
+  input.addEventListener('change', (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.name.toLowerCase().endsWith('.geojson')){ alert('Solo .geojson'); input.value=''; setRemoveState(false); return; }
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      try { handleGeoJSON(JSON.parse(evt.target.result)); }
+      catch(err){ alert('GeoJSON inválido.'); console.error(err); setRemoveState(false); }
+      finally { input.value = ''; }
+    };
+    reader.readAsText(file);
+  });
+
+})();
+</script>
+
+
+
+
 <!-- ================================================================= -->
 
 
