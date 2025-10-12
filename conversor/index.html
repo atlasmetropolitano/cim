@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Conversor SHP-ZIP a GeoJSON (Web)</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" href="favicon.ico">
+  <script src="https://unpkg.com/shpjs@latest/dist/shp.min.js"></script>
+</head>
+<body>
+  <div class="container">
+    <h1>Conversor SHP-ZIP a GeoJSON (solo navegador)</h1>
+    <label for="file-input">Seleccioná tu archivo .zip:</label><br>
+    <input type="file" id="file-input" accept=".zip" />
+    <button id="btn-clear">Limpiar</button>
+    <pre id="out"></pre>
+    <a id="download-link" style="display:none;" download="convertido.geojson">Descargar GeoJSON</a>
+    <div class="modal" id="error-modal">
+      <div class="modal-content">
+        <p id="error-msg"></p>
+        <button id="close-modal">Cerrar</button>
+      </div>
+    </div>
+  </div>
+  <script src="main.js"></script>
+</body>
+</html>
