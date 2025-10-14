@@ -1434,6 +1434,64 @@ document.querySelectorAll(".fab-option").forEach(btn => {
 })();
 </script>
 
+<!-- === Recarga invisible (botón fantasma + atajo de teclado Alt+Shift+R) === -->
+<style>
+  /* Botón fantasma: casi invisible, 12px en la esquina superior derecha */
+  #soft-refresh-btn{
+    position:fixed; top:450px; right:6px; width:30px; height:30px;
+    opacity:.06; border-radius:50%; background:#000; z-index:1000000;
+    border:0; padding:0; cursor:pointer; outline:none;
+  }
+  #soft-refresh-btn:focus{ opacity:.35; }     /* visible al enfocar (accesible) */
+  #soft-refresh-btn:hover{ opacity:.15; }     /* leve pista al pasar el mouse */
+</style>
+
+<button id="soft-refresh-btn" title="Recargar (F5)" aria-label="Recargar"></button>
+
+<script>
+(() => {
+  // 🔄 Recarga "dura" simulada: evita caché agregando un querystring único
+  function hardReload(){
+    const base = location.href.split('#')[0].split('?')[0];
+    // Usamos replace() para no sumar entrada al historial
+    location.replace(base + '?v=' + Date.now());
+  }
+
+  // 🕹️ 1) Botón fantasma: doble clic para recargar (evita toques accidentales)
+  const ghost = document.getElementById('soft-refresh-btn');
+  let lastClick = 0;
+  ghost.addEventListener('click', () => {
+    const now = Date.now();
+    if (now - lastClick < 350) hardReload(); // doble clic < 350ms
+    lastClick = now;
+  });
+
+  // ⌨️ 2) Atajo de teclado: Alt + Shift + R (no interfiere con Ctrl+R del navegador)
+  window.addEventListener('keydown', (e)=>{
+    const t = e.target;
+    const tag = (t && t.tagName || '').toLowerCase();
+    if (tag === 'input' || tag === 'textarea' || t?.isContentEditable) return; // no molestar al escribir
+
+    if (e.altKey && e.shiftKey && (e.key === 'R' || e.key === 'r')){
+      e.preventDefault();
+      hardReload();
+    }
+  });
+
+  // 🧯 (Opcional) Triple-esc para recargar si algo queda congelado
+  let escCount = 0, escTimer = null;
+  window.addEventListener('keydown', (e)=>{
+    if (e.key !== 'Escape') return;
+    escCount++;
+    clearTimeout(escTimer);
+    escTimer = setTimeout(()=> escCount = 0, 700);
+    if (escCount >= 3){ hardReload(); }
+  });
+})();
+</script>
+<!-- === Fin recarga ninja === -->
+
+
 
 
 
