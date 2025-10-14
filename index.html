@@ -122,6 +122,17 @@ min-width: 160px;
             <button class="tool-btn" id="btn-directions" title="Cómo llegar"><i class="fas fa-route"></i></button>
             <button class="tool-btn" id="btn-zoom-in" title="Acercar"><i class="fas fa-search-plus"></i></button>
             <button class="tool-btn" id="btn-zoom-out" title="Alejar"><i class="fas fa-search-minus"></i></button>
+            <!-- Botón Regla (menú arriba a la izquierda) -->
+            <button id="btnRuler" class="tool-btn" title="Regla (M)" aria-label="Regla">
+            <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M3 17.25V21h3.75L20.81 6.94 17.06 3.19 3 17.25zM5.92 19H5v-.92l9.65-9.65.92.92L5.92 19zm10.35-11.78.92.92.71-.71-.92-.92-.71.71zM13.5 6.5l.92.92.71-.71-.92-.92-.71.71zM10.5 9.5l.92.92.71-.71-.92-.92-.71.71z"/>
+            </svg>
+            </button>
+
+
+
+            
+
             <button class="tool-btn" id="btn-reset" title="Restablecer Mapa"><i class="fas fa-home"></i></button>
             <button class="tool-btn" id="btn-screenshot-map" title="Capturar Pantalla"><i class="fas fa-camera"></i></button>
             <button class="tool-btn" id="btn-print-map" title="Imprimir Mapa"><i class="fas fa-print"></i></button>
@@ -1490,6 +1501,331 @@ document.querySelectorAll(".fab-option").forEach(btn => {
 })();
 </script>
 <!-- === Fin recarga ninja === -->
+
+
+
+<div id="ruler-panel" class="panel" hidden>
+  <div class="row">
+    <label for="rulerUnits">Unidades</label>
+    <select id="rulerUnits">
+      <option value="m">metros (m)</option>
+      <option value="km" selected>kilómetros (km)</option>
+      <option value="mi">millas (mi)</option>
+      <option value="nmi">millas náuticas (nmi)</option>
+    </select>
+  </div>
+  <div class="row"><span>Segmento:</span> <strong id="ruler-seg">0</strong></div>
+  <div class="row"><span>Total:</span> <strong id="ruler-total">0</strong></div>
+  <div class="row tips">Doble clic = finalizar · ESC = cancelar</div>
+</div>
+
+
+
+<!-- <style>
+  #btnRuler{ display:inline-flex; align-items:center; gap:.4rem;
+    padding:.45rem .6rem; border:1px solid #e0e0e0; border-radius:.5rem;
+    background:#fff; cursor:pointer; line-height:1; user-select:none; margin-left:.4rem;
+  }
+  #btnRuler.active{ background:#f0f7ff; border-color:#bcd6ff; }
+
+  #ruler-panel{
+    position:fixed; top:56px; left:12px; z-index:10050;
+    background:#fff; border:1px solid #e5e7eb; border-radius:.75rem;
+    box-shadow:0 10px 25px rgba(0,0,0,.08);
+    padding:.75rem .9rem; min-width:220px;
+    font:14px/1.35 system-ui, -apple-system,"Segoe UI",Roboto,Ubuntu,"Helvetica Neue",Arial,sans-serif;
+  }
+  #ruler-panel .row{ display:flex; justify-content:space-between; align-items:center; margin:.35rem 0; }
+  #ruler-panel label{ color:#111827; font-weight:600; }
+  #ruler-panel select{ padding:.25rem .4rem; border:1px solid #d1d5db; border-radius:.4rem; background:#fff; }
+  #ruler-panel .tips{ font-size:.85em; color:#6b7280; justify-content:flex-start; gap:.4rem; }
+</style> -->
+<style>
+  #ruler-panel { position:fixed; top:56px; left:12px; z-index:10050; }
+</style>
+
+
+<script>
+/**
+ * Regla Leaflet — panel compacto, arrastrable y persistente
+ * - Botón: <button id="btnRuler" class="tool-btn">…</button>
+ * - Panel: se crea solo si no existe (#ruler-panel)
+ * - Atajos: M (toggle), Doble clic = finalizar (panel visible), ESC/Backspace = cancelar (panel oculto)
+ */
+(function attachRulerWhenReady(){
+
+  // Crea panel si no existe y lo deja compacto + draggable
+  function ensurePanel(){
+    let panel = document.getElementById('ruler-panel');
+    if (!panel) {
+      panel = document.createElement('div');
+      panel.id = 'ruler-panel';
+      panel.innerHTML = `
+        <div id="ruler-drag" style="cursor:move;font-weight:600;margin:-4px -6px 6px;padding:6px 6px 4px;user-select:none;">📏 Regla</div>
+        <div class="row">
+          <label for="rulerUnits">Unidades</label>
+          <select id="rulerUnits">
+            <option value="m">metros (m)</option>
+            <option value="km" selected>kilómetros (km)</option>
+            <option value="mi">millas (mi)</option>
+            <option value="nmi">millas náuticas (nmi)</option>
+          </select>
+        </div>
+        <div class="row"><span>Segmento:</span> <strong id="ruler-seg">0</strong></div>
+        <div class="row"><span>Total:</span> <strong id="ruler-total">0</strong></div>
+        <div class="row tips">Clics para marcar · Doble clic finaliza · ESC/Backspace cancela</div>
+      `;
+      document.body.appendChild(panel);
+    }
+
+    // Estilo mínimo compacto (sin tocar tu CSS global)
+    Object.assign(panel.style, {
+      position: 'fixed',
+      top: localStorage.getItem('rulerPanelTop')  || '72px',
+      left: localStorage.getItem('rulerPanelLeft') || '14px',
+      width: '240px',
+      minWidth: '240px',
+      maxWidth: '280px',
+      maxHeight: '180px',
+      overflow: 'auto',
+      padding: '8px 10px',
+      background: '#fff',
+      border: '1px solid #e5e7eb',
+      borderRadius: '10px',
+      boxShadow: '0 8px 20px rgba(0,0,0,.1)',
+      fontSize: '13px',
+      lineHeight: '1.25',
+      zIndex: '10050',
+      display: 'none' // empieza oculto
+    });
+
+    // Drag & drop del panel (mouse + touch) con límites y posición persistente
+    const drag = document.getElementById('ruler-drag');
+    if (drag && !drag.__rulerDragBound) {
+      let dragging=false, offX=0, offY=0;
+      const pt = e => (e.touches?.[0]) ? {x:e.touches[0].clientX, y:e.touches[0].clientY} : {x:e.clientX, y:e.clientY};
+      const start = e => {
+        dragging=true;
+        const r = panel.getBoundingClientRect(), p = pt(e);
+        offX = p.x - r.left; offY = p.y - r.top;
+        document.addEventListener('mousemove', move);
+        document.addEventListener('mouseup', end);
+        document.addEventListener('touchmove', move, {passive:false});
+        document.addEventListener('touchend', end);
+      };
+      const move = e => {
+        if(!dragging) return;
+        e.preventDefault();
+        const p = pt(e);
+        let x = p.x - offX, y = p.y - offY;
+        x = Math.max(0, Math.min(window.innerWidth  - panel.offsetWidth,  x));
+        y = Math.max(0, Math.min(window.innerHeight - panel.offsetHeight, y));
+        panel.style.left = x+'px';
+        panel.style.top  = y+'px';
+      };
+      const end = () => {
+        dragging=false;
+        document.removeEventListener('mousemove', move);
+        document.removeEventListener('mouseup', end);
+        document.removeEventListener('touchmove', move);
+        document.removeEventListener('touchend', end);
+        localStorage.setItem('rulerPanelLeft', panel.style.left);
+        localStorage.setItem('rulerPanelTop',  panel.style.top);
+      };
+      drag.addEventListener('mousedown', start);
+      drag.addEventListener('touchstart', start, {passive:false});
+      drag.__rulerDragBound = true; // evitar doble binding
+    }
+
+    return panel;
+  }
+
+  function initRuler(){
+    if (typeof L === 'undefined' || typeof window.map === 'undefined') {
+      console.warn('[Regla] Falta Leaflet o window.map');
+      return;
+    }
+
+    const btn = document.getElementById('btnRuler');
+    if (!btn) { console.warn('[Regla] Falta #btnRuler'); return; }
+
+    const panel   = ensurePanel();
+    const selUnits= document.getElementById('rulerUnits');
+    const $seg    = document.getElementById('ruler-seg');
+    const $tot    = document.getElementById('ruler-total');
+    if (!selUnits || !$seg || !$tot){ console.warn('[Regla] Faltan elementos internos del panel'); return; }
+
+    // Estado
+    let measuring=false, pts=[], segDist=0, totalDist=0, moveLine=null, fixedLine=null, markers=[];
+    let mapClickHandler, mapDblHandler, mapMoveHandler, keyHandler;
+
+    // Utils
+    const fmt=(m,u)=>{ const conv={m:x=>x, km:x=>x/1000, mi:x=>x*0.000621371, nmi:x=>x*0.000539957};
+      const v=(conv[u]||conv.km)(m), d=v>=1000?1:2; return v.toFixed(d)+' '+u; };
+    const redrawFixed=()=>{ if(!fixedLine){ fixedLine=L.polyline(pts,{color:'#2563eb',weight:3,opacity:.9}).addTo(map); } else fixedLine.setLatLngs(pts); };
+    const drawMove=(ll)=>{ if(pts.length===0) return; const last=pts[pts.length-1]; segDist=last.distanceTo(ll);
+      if(!moveLine){ moveLine=L.polyline([last,ll],{color:'#60a5fa',weight:2,dashArray:'6 6'}).addTo(map); }
+      else moveLine.setLatLngs([last,ll]);
+      updatePanel();
+    };
+    const addVertex=(ll)=>{ const mk=L.circleMarker(ll,{radius:4,color:'#1d4ed8',weight:2,fillColor:'#fff',fillOpacity:1}); mk.addTo(map); markers.push(mk); };
+    const updateTotals=()=>{ totalDist=0; for(let i=1;i<pts.length;i++) totalDist+=pts[i-1].distanceTo(pts[i]); };
+    const updatePanel=()=>{ const u=selUnits.value; $seg.textContent=fmt(segDist||0,u); $tot.textContent=fmt(totalDist||0,u); };
+
+    // Visibilidad panel
+    const showPanel=()=>{ panel.hidden=false; panel.style.display='block'; };
+    const hidePanel=()=>{ panel.hidden=true;  panel.style.display='none';  };
+
+    // start/stop con bandera para ocultar o no el panel
+    const start=()=>{
+      if(measuring) return;
+      measuring=true;
+      btn.classList.add('active');
+      showPanel();
+
+      pts=[]; segDist=0; totalDist=0;
+      if(fixedLine){ map.removeLayer(fixedLine); fixedLine=null; }
+      if(moveLine){ map.removeLayer(moveLine); moveLine=null; }
+      markers.forEach(m=>map.removeLayer(m)); markers=[];
+
+      mapClickHandler=(e)=>{ pts.push(e.latlng); addVertex(e.latlng); redrawFixed(); updateTotals(); segDist=0; updatePanel(); };
+      mapDblHandler=()=> stop(false, /*hidePanelNow=*/false); // ⬅ deja panel visible
+      mapMoveHandler=(e)=>{ if(measuring) drawMove(e.latlng); };
+      keyHandler=(e)=>{
+        const t=e.target, tag=(t&&t.tagName||'').toLowerCase();
+        if(tag==='input'||tag==='textarea'||t?.isContentEditable) return;
+
+        if(e.key==='Escape'){ stop(true,  true); }      // cancelar + ocultar
+        if(e.key==='Backspace'){ e.preventDefault(); stop(true,  true); } // cancelar + ocultar
+
+        if(e.ctrlKey && (e.key==='z'||e.key==='Z')){    // deshacer
+          if(pts.length>0){
+            pts.pop(); const mk=markers.pop(); if(mk) map.removeLayer(mk);
+            redrawFixed(); updateTotals(); segDist=0; updatePanel();
+          }
+        }
+      };
+
+      map.on('click', mapClickHandler);
+      map.on('dblclick', mapDblHandler);
+      map.on('mousemove', mapMoveHandler);
+      window.addEventListener('keydown', keyHandler);
+
+      updatePanel();
+    };
+
+    // stop(cancel, hidePanelNow)
+    //  - cancel=true limpia geometría/markers/valores
+    //  - hidePanelNow=true oculta panel; false lo deja visible (para leer total)
+    const stop=(cancel=false, hidePanelNow=true)=>{
+      measuring=false;
+      btn.classList.remove('active');
+
+      if (mapClickHandler) map.off('click', mapClickHandler);
+      if (mapDblHandler)   map.off('dblclick', mapDblHandler);
+      if (mapMoveHandler)  map.off('mousemove', mapMoveHandler);
+      if (keyHandler)      window.removeEventListener('keydown', keyHandler);
+
+      if(cancel){
+        if(fixedLine){ map.removeLayer(fixedLine); fixedLine=null; }
+        if(moveLine){ map.removeLayer(moveLine); moveLine=null; }
+        markers.forEach(m=>map.removeLayer(m)); markers=[];
+        pts=[]; segDist=0; totalDist=0; updatePanel();
+      }
+      if (hidePanelNow) hidePanel(); else showPanel();
+    };
+
+    // Interacciones
+    btn.addEventListener('click', ()=>{ measuring ? stop(false, true) : start(); });
+    window.addEventListener('keydown',(e)=>{
+      const t=e.target, tag=(t&&t.tagName||'').toLowerCase();
+      if(tag==='input'||tag==='textarea'||t?.isContentEditable) return;
+      if(e.key==='m'||e.key==='M'){ e.preventDefault(); measuring ? stop(false, true) : start(); }
+    });
+    selUnits.addEventListener('change', updatePanel);
+
+    console.log('🧭 Regla lista (doble clic no oculta panel).');
+  }
+
+  // Inicializa cuando el mapa esté listo
+  if (window.map && typeof L !== 'undefined') initRuler();
+  else document.addEventListener('mapReady', initRuler, { once:true });
+
+})();
+</script>
+
+
+
+
+
+
+<script>
+/* Compacta el panel de la Regla y limita su alto */
+(function clampRulerPanel(){
+  function apply(){
+    const p = document.getElementById('ruler-panel');
+    if (!p) return;
+
+    // Tamaño compacto + scroll interno
+    Object.assign(p.style, {
+      position: 'fixed',            // que no empuje el layout
+      top: '72px',
+      left: '14px',
+      width: '240px',               // ancho fijo
+      minWidth: '240px',
+      maxWidth: '280px',
+      maxHeight: '180px',           // <<< ALTO MÁXIMO (ajustá a gusto)
+      overflow: 'auto',             // scroll si se pasa
+      padding: '8px 10px',
+      background: '#fff',
+      border: '1px solid #e5e7eb',
+      borderRadius: '10px',
+      boxShadow: '0 8px 20px rgba(0,0,0,.1)',
+      fontSize: '13px',
+      lineHeight: '1.25',
+      zIndex: '10050'
+    });
+
+    // Si usás el panel arrastrable, poné un “asa” discreta
+    if (!document.getElementById('ruler-drag')) {
+      p.insertAdjacentHTML('afterbegin',
+        '<div id="ruler-drag" style="cursor:move;font-weight:600;margin:-4px -6px 6px;padding:6px 6px 4px;user-select:none;">📏 Regla</div>'
+      );
+    }
+
+    // Drag & drop simple (mouse + touch)
+    const drag = document.getElementById('ruler-drag');
+    let dragging=false, offX=0, offY=0;
+    const pt = e => (e.touches?.[0]) ? {x:e.touches[0].clientX, y:e.touches[0].clientY} : {x:e.clientX, y:e.clientY};
+    const start = e => { dragging=true; const r=p.getBoundingClientRect(), m=pt(e); offX=m.x-r.left; offY=m.y-r.top;
+      document.addEventListener('mousemove', move); document.addEventListener('mouseup', end);
+      document.addEventListener('touchmove', move, {passive:false}); document.addEventListener('touchend', end);
+    };
+    const move = e => { if(!dragging) return; e.preventDefault(); const m=pt(e);
+      let x=m.x-offX, y=m.y-offY;
+      x=Math.max(0, Math.min(innerWidth-p.offsetWidth, x));
+      y=Math.max(0, Math.min(innerHeight-p.offsetHeight, y));
+      p.style.left=x+'px'; p.style.top=y+'px';
+    };
+    const end = () => { dragging=false;
+      document.removeEventListener('mousemove', move); document.removeEventListener('mouseup', end);
+      document.removeEventListener('touchmove', move); document.removeEventListener('touchend', end);
+    };
+    drag.addEventListener('mousedown', start);
+    drag.addEventListener('touchstart', start, {passive:false});
+  }
+
+  // aplicamos cuando el panel exista (la regla lo crea al activarse)
+  if (document.getElementById('ruler-panel')) apply();
+  document.addEventListener('mapReady', () => setTimeout(apply, 0), { once:true });
+})();
+</script>
+
+
+
+
+
+
 
 
 
