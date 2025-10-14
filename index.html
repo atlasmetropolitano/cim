@@ -115,47 +115,38 @@ min-width: 160px;
             <input type="text" id="address-search" placeholder="Buscar dirección o lugar...">
             <button id="btn-search-address" title="Buscar dirección"><i class="fas fa-search"></i></button>
         </div>
+        <!-- 🧭 Botón de geolocalización -->
+            <button class="tool-btn" id="btn-locate-user" title="Mi ubicación">
+                <i class="fas fa-location-crosshairs"></i>
+            </button>
+            <button class="tool-btn" id="btn-directions" title="Cómo llegar"><i class="fas fa-route"></i></button>
             <button class="tool-btn" id="btn-zoom-in" title="Acercar"><i class="fas fa-search-plus"></i></button>
             <button class="tool-btn" id="btn-zoom-out" title="Alejar"><i class="fas fa-search-minus"></i></button>
             <button class="tool-btn" id="btn-reset" title="Restablecer Mapa"><i class="fas fa-home"></i></button>
-            
-
-
+            <button class="tool-btn" id="btn-screenshot-map" title="Capturar Pantalla"><i class="fas fa-camera"></i></button>
+            <button class="tool-btn" id="btn-print-map" title="Imprimir Mapa"><i class="fas fa-print"></i></button>
             <!-- <button class="tool-btn" id="btn-upload-geojson" title="Cargar GeoJSON"><i class="fas fa-file-upload"></i></button> -->
             <button class="tool-btn" id="btn-load-wms" title="Cargar Servicio WMS"><i class="fas fa-globe"></i></button>
-            <button class="tool-btn" id="btn-load-wfs" title="Cargar Servicio WFS"><i class="fas fa-database"></i></button>                
-            
-             
+            <button class="tool-btn" id="btn-load-wfs" title="Cargar Servicio WFS"><i class="fas fa-database"></i></button> 
+            <button class="tool-btn" title="Convertir SHP/ZIP a GeoJSON"
+            onclick="window.open('conversor/index.html', '_blank')">
+                🔧
+            </button>
             <button class="tool-btn" id="btn-download-geojson" title="Descargar GeoJSON"><i class="fas fa-download"></i></button>
             <button class="tool-btn" id="btn-upload-geojson" title="Cargar GeoJSON"><i class="fas fa-file-upload"></i></button>
-            <button class="tool-btn" id="btn-print-map" title="Imprimir Mapa"><i class="fas fa-print"></i></button>
-            <button class="tool-btn" id="btn-screenshot-map" title="Capturar Pantalla"><i class="fas fa-camera"></i></button>
-            
-
-            <button class="tool-btn" id="btn-directions" title="Cómo llegar"><i class="fas fa-route"></i></button>
-            
             <button class="tool-btn" title="Abrir visor multimedia" onclick="abrirMultimedia()">
-                 🎬
+                🎬
             </button>
             <button id="btn-remove-mm" class="tool-btn" title="Quitar capa multimedia"
-        onclick="eliminarMultimedia()" disabled aria-disabled="true">🗑️</button>
-        
-        <button class="tool-btn" title="Convertir SHP/ZIP a GeoJSON"
-        onclick="window.open('conversor/index.html', '_blank')">🔧</button>
-
-        
-
+            onclick="eliminarMultimedia()" disabled aria-disabled="true">
+                🗑️
+            </button>
             <button class="tool-btn" title="Ambiental" onclick="ambiental()">
                  🌳
             </button>
-
-        <!-- 🧭 Botón de geolocalización -->
-        <button class="tool-btn" id="btn-locate-user" title="Mi ubicación">
-            <i class="fas fa-location-crosshairs"></i>
-        </button>
-        <button class="tool-btn" id="btn-toggle-layer" title="Alternar Capa"><i class="fas fa-layer-group"></i></button>
-            <input type="file" id="geojson-input" accept=".geojson" style="display: none;">
-        </div>
+            <button class="tool-btn" id="btn-toggle-layer" title="Alternar Capa"><i class="fas fa-layer-group"></i></button>
+                <input type="file" id="geojson-input" accept=".geojson" style="display: none;">
+            </div>
       
 
         <!-- 📌 Cuadro flotante para datos del WMS -->
